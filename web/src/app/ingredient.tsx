@@ -106,78 +106,85 @@ export async function IngredientPanel({ supabaseUrl, supabaseAnonKey }: Props) {
                 <th className="px-4 py-3 font-medium">category</th>
                 <th className="px-4 py-3 font-medium">default_unit</th>
                 <th className="px-4 py-3 font-medium">is_allergen</th>
-                <th className="px-4 py-3 font-medium">Update</th>
-                <th className="px-4 py-3 font-medium">Delete</th>
+                <th className="px-4 py-3 font-medium">Modify</th>
               </tr>
             </thead>
             <tbody>
-              {rows.map((row) => (
-                <tr key={row.ingredient_id} className="border-t border-zinc-200 align-top">
-                  <td className="px-4 py-3 whitespace-nowrap">{row.ingredient_id}</td>
-                  <td className="px-4 py-3">{row.name}</td>
-                  <td className="px-4 py-3">{row.category}</td>
-                  <td className="px-4 py-3">{row.default_unit}</td>
-                  <td className="px-4 py-3">{row.is_allergen ? "true" : "false"}</td>
-                  <td className="px-4 py-3">
-                    <form action={updateIngredient} className="flex min-w-[200px] flex-col gap-2">
-                      <input type="hidden" name="ingredient_id" value={row.ingredient_id} />
+              {rows.map((row) => {
+                const formId = `ingredient-form-${row.ingredient_id}`;
+
+                return (
+                  <tr key={row.ingredient_id} className="border-t border-zinc-200 align-top">
+                    <td className="px-4 py-3 whitespace-nowrap">{row.ingredient_id}</td>
+                    <td className="px-4 py-3">
                       <input
+                        form={formId}
                         name="name"
                         type="text"
                         required
                         defaultValue={row.name}
-                        className="w-full rounded border border-zinc-300 px-2 py-1 text-xs focus:border-blue-500 focus:outline-none"
+                        className="w-full min-w-[160px] rounded border border-zinc-300 px-2 py-1 text-xs focus:border-blue-500 focus:outline-none"
                         aria-label={`Name for ingredient ${row.ingredient_id}`}
                       />
+                    </td>
+                    <td className="px-4 py-3">
                       <input
+                        form={formId}
                         name="category"
                         type="text"
                         required
                         defaultValue={row.category}
-                        className="w-full rounded border border-zinc-300 px-2 py-1 text-xs focus:border-blue-500 focus:outline-none"
+                        className="w-full min-w-[160px] rounded border border-zinc-300 px-2 py-1 text-xs focus:border-blue-500 focus:outline-none"
                         aria-label={`Category for ingredient ${row.ingredient_id}`}
                       />
+                    </td>
+                    <td className="px-4 py-3">
                       <input
+                        form={formId}
                         name="default_unit"
                         type="text"
                         required
                         defaultValue={row.default_unit}
-                        className="w-full rounded border border-zinc-300 px-2 py-1 text-xs focus:border-blue-500 focus:outline-none"
+                        className="w-full min-w-[120px] rounded border border-zinc-300 px-2 py-1 text-xs focus:border-blue-500 focus:outline-none"
                         aria-label={`Default unit for ingredient ${row.ingredient_id}`}
                       />
+                    </td>
+                    <td className="px-4 py-3">
                       <select
+                        form={formId}
                         name="is_allergen"
                         defaultValue={row.is_allergen ? "true" : "false"}
-                        className="w-full rounded border border-zinc-300 px-2 py-1 text-xs focus:border-blue-500 focus:outline-none"
+                        className="w-full min-w-[96px] rounded border border-zinc-300 px-2 py-1 text-xs focus:border-blue-500 focus:outline-none"
                         aria-label={`Allergen for ingredient ${row.ingredient_id}`}
                       >
                         <option value="false">No</option>
                         <option value="true">Yes</option>
                       </select>
-                      <button
-                        type="submit"
-                        className="rounded bg-blue-600 px-2 py-1 text-xs font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
-                      >
-                        Save changes
-                      </button>
-                    </form>
-                  </td>
-                  <td className="px-4 py-3">
-                    <form action={deleteIngredient}>
-                      <input type="hidden" name="ingredient_id" value={row.ingredient_id} />
-                      <button
-                        type="submit"
-                        className="rounded bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-1"
-                      >
-                        Delete
-                      </button>
-                    </form>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                    <td className="px-4 py-3">
+                      <form id={formId} action={updateIngredient} className="flex min-w-[150px] flex-col gap-2">
+                        <input type="hidden" name="ingredient_id" value={row.ingredient_id} />
+                        <button
+                          type="submit"
+                          className="rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+                        >
+                          Save changes
+                        </button>
+                        <button
+                          type="submit"
+                          formAction={deleteIngredient}
+                          className="rounded bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-1"
+                        >
+                          Delete
+                        </button>
+                      </form>
+                    </td>
+                  </tr>
+                );
+              })}
               {rows.length === 0 && (
                 <tr className="border-t border-zinc-200">
-                  <td className="px-4 py-3 text-zinc-500" colSpan={7}>
+                  <td className="px-4 py-3 text-zinc-500" colSpan={6}>
                     No ingredient rows found.
                   </td>
                 </tr>

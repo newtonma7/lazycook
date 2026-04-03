@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-type Tab = "consumer" | "ingredient";
+type Tab = "account" | "ingredient";
 
 type Props = {
   active: Tab;
@@ -16,11 +16,11 @@ export function TableTabs({ active }: Props) {
   return (
     <nav className="flex gap-0.5 border-b border-zinc-200" aria-label="Data tables">
       <Link
-        href="/?tab=consumer"
-        className={`${base} ${active === "consumer" ? activeCls : inactiveCls}`}
-        aria-current={active === "consumer" ? "page" : undefined}
+        href="/?tab=account"
+        className={`${base} ${active === "account" ? activeCls : inactiveCls}`}
+        aria-current={active === "account" ? "page" : undefined}
       >
-        Consumers
+        Account
       </Link>
       <Link
         href="/?tab=ingredient"
