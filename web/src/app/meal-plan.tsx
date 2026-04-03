@@ -1,33 +1,34 @@
 import { createClient } from "@supabase/supabase-js";
 import { Fragment } from "react";
 import {
-    addPantry,
-    addPantryItem,
-    deletePantry,
-    deletePantryItem,
-    updatePantry,
-    updatePantryItem,
+    addMealPlan,
+    addMealPlanItem,
+    deleteMealPlan,
+    deleteMealPlanItem,
+    updateMealPlan,
+    updateMealPlanItem,
 } from "./actions";
 
-export type PantryRow = {
-    pantry_id: number;
+export type MealPlanRow = {
+    meal_plan_id: number;
     consumer_id: number | null;
-    pantry_name: string;
+    plan_name: string;
+    start_date: string | null;
+    end_date: string | null;
 };
 
-export type PantryItemRow = {
-    pantry_item_id: number;
-    pantry_id: number;
-    ingredient_id: number;
-    purchase_date: string | null;
-    quantity_on_hand: string | number | null;
-    unit: string | null;
-    expiration_date: string | null;
+export type MealPlanItemRow = {
+    meal_plan_item_id: number;
+    meal_plan_id: number;
+    recipe_id: number;
+    scheduled_for: string | null;
+    meal_type: string | null;
+    servings: number | null;
 };
 
-type IngredientOption = {
-    ingredient_id: number;
-    name: string;
+type RecipeOption = {
+    recipe_id: number;
+    title: string;
 };
 
 type Props = {
@@ -35,61 +36,61 @@ type Props = {
     supabaseAnonKey: string;
 };
 
-export async function PantryPanel({ supabaseUrl, supabaseAnonKey }: Props) {
+export async function MealPlanPanel({ supabaseUrl, supabaseAnonKey }: Props) {
     const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
     const [
-        { data: pantriesData, error: pantriesError },
-        { data: pantryItemsData, error: pantryItemsError },
-        { data: ingredientsData, error: ingredientsError },
+        { data: plansData, error: plansError },
+        { data: itemsData, error: itemsError },
+        { data: recipesData, error: recipesError },
     ] = await Promise.all([
         supabase
-            .from("pantry")
-            .select("pantry_id, consumer_id, pantry_name")
-            .order("pantry_id", { ascending: true }),
+            .from("meal_plan")
+            .select("meal_plan_id, consumer_id, plan_name, start_date, end_date")
+            .order("meal_plan_id", { ascending: true }),
         supabase
-            .from("pantry_item")
-            .select("pantry_item_id, pantry_id, ingredient_id, purchase_date, quantity_on_hand, unit, expiration_date")
-            .order("pantry_id", { ascending: true })
-            .order("pantry_item_id", { ascending: true }),
-        supabase.from("ingredient").select("ingredient_id, name").order("name", { ascending: true }),
+            .from("meal_plan_item")
+            .select("meal_plan_item_id, meal_plan_id, recipe_id, scheduled_for, meal_type, servings")
+            .order("meal_plan_id", { ascending: true })
+            .order("meal_plan_item_id", { ascending: true }),
+        supabase.from("recipe").select("recipe_id, title").order("title", { ascending: true }),
     ]);
 
-    if (pantriesError || pantryItemsError || ingredientsError) {
-        const message = pantriesError?.message ?? pantryItemsError?.message ?? ingredientsError?.message ?? "Unknown error";
+    if (plansError || itemsError || recipesError) {
+        const message = plansError?.message ?? itemsError?.message ?? recipesError?.message ?? "Unknown error";
 
         return (
             <p className="rounded-md border border-red-300 bg-red-50 p-4 text-red-700">
-                Failed to load pantry data: {message}
+                Failed to load meal plan data: {message}
             </p>
         );
     }
 
-    const pantries = (pantriesData ?? []) as PantryRow[];
-    const pantryItems = (pantryItemsData ?? []) as PantryItemRow[];
-    const ingredients = (ingredientsData ?? []) as IngredientOption[];
+    const plans = (plansData ?? []) as MealPlanRow[];
+    const items = (itemsData ?? []) as MealPlanItemRow[];
+    const recipes = (recipesData ?? []) as RecipeOption[];
 
-    const ingredientNameById = new Map(ingredients.map((i) => [i.ingredient_id, i.name]));
-    const itemsByPantryId = new Map<number, PantryItemRow[]>();
+    const recipeTitleById = new Map(recipes.map((r) => [r.recipe_id, r.title]));
+    const itemsByPlanId = new Map<number, MealPlanItemRow[]>();
 
-    for (const item of pantryItems) {
-        const existing = itemsByPantryId.get(item.pantry_id) ?? [];
+    for (const item of items) {
+        const existing = itemsByPlanId.get(item.meal_plan_id) ?? [];
         existing.push(item);
-        itemsByPantryId.set(item.pantry_id, existing);
+        itemsByPlanId.set(item.meal_plan_id, existing);
     }
 
     return (
         <>
             <div className="mb-8 rounded-lg border border-zinc-200 bg-zinc-50 p-6">
-                <h2 className="mb-4 text-lg font-medium">Add New Pantry</h2>
-                <form action={addPantry} className="grid gap-4 lg:grid-cols-3">
+                <h2 className="mb-4 text-lg font-medium">Add New Meal Plan</h2>
+                <form action={addMealPlan} className="grid gap-4 lg:grid-cols-2">
                     <div className="flex flex-col gap-1">
-                        <label htmlFor="pantry-name" className="text-sm text-zinc-600">
-                            Pantry Name
+                        <label htmlFor="mp-name" className="text-sm text-zinc-600">
+                            Plan Name
                         </label>
                         <input
-                            id="pantry-name"
-                            name="pantry_name"
+                            id="mp-name"
+                            name="plan_name"
                             type="text"
                             required
                             className="rounded border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
@@ -97,14 +98,38 @@ export async function PantryPanel({ supabaseUrl, supabaseAnonKey }: Props) {
                     </div>
 
                     <div className="flex flex-col gap-1">
-                        <label htmlFor="pantry-consumer" className="text-sm text-zinc-600">
+                        <label htmlFor="mp-consumer" className="text-sm text-zinc-600">
                             Consumer ID (optional)
                         </label>
                         <input
-                            id="pantry-consumer"
+                            id="mp-consumer"
                             name="consumer_id"
                             type="number"
                             min={1}
+                            className="rounded border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                        />
+                    </div>
+
+                    <div className="flex flex-col gap-1">
+                        <label htmlFor="mp-start" className="text-sm text-zinc-600">
+                            Start Date
+                        </label>
+                        <input
+                            id="mp-start"
+                            name="start_date"
+                            type="date"
+                            className="rounded border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                        />
+                    </div>
+
+                    <div className="flex flex-col gap-1">
+                        <label htmlFor="mp-end" className="text-sm text-zinc-600">
+                            End Date
+                        </label>
+                        <input
+                            id="mp-end"
+                            name="end_date"
+                            type="date"
                             className="rounded border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
                         />
                     </div>
@@ -124,44 +149,64 @@ export async function PantryPanel({ supabaseUrl, supabaseAnonKey }: Props) {
                 <table className="min-w-full text-left text-sm">
                     <thead className="bg-zinc-100">
                         <tr>
-                            <th className="px-4 py-3 font-medium">pantry_id</th>
+                            <th className="px-4 py-3 font-medium">meal_plan_id</th>
                             <th className="px-4 py-3 font-medium">consumer_id</th>
-                            <th className="px-4 py-3 font-medium">pantry_name</th>
+                            <th className="px-4 py-3 font-medium">plan_name</th>
+                            <th className="px-4 py-3 font-medium">start_date</th>
+                            <th className="px-4 py-3 font-medium">end_date</th>
                             <th className="px-4 py-3 font-medium">Modify</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {pantries.map((pantry) => {
-                            const pantryFormId = `pantry-form-${pantry.pantry_id}`;
-                            const relatedItems = itemsByPantryId.get(pantry.pantry_id) ?? [];
+                        {plans.map((plan) => {
+                            const planFormId = `meal-plan-form-${plan.meal_plan_id}`;
+                            const relatedItems = itemsByPlanId.get(plan.meal_plan_id) ?? [];
 
                             return (
-                                <Fragment key={pantry.pantry_id}>
+                                <Fragment key={plan.meal_plan_id}>
                                     <tr className="border-t border-zinc-200 align-top">
-                                        <td className="px-4 py-3 whitespace-nowrap">{pantry.pantry_id}</td>
+                                        <td className="px-4 py-3 whitespace-nowrap">{plan.meal_plan_id}</td>
                                         <td className="px-4 py-3">
                                             <input
-                                                form={pantryFormId}
+                                                form={planFormId}
                                                 name="consumer_id"
                                                 type="number"
                                                 min={1}
-                                                defaultValue={pantry.consumer_id ?? ""}
+                                                defaultValue={plan.consumer_id ?? ""}
                                                 className="w-full min-w-[80px] rounded border border-zinc-300 px-2 py-1 text-xs focus:border-blue-500 focus:outline-none"
                                             />
                                         </td>
                                         <td className="px-4 py-3">
                                             <input
-                                                form={pantryFormId}
-                                                name="pantry_name"
+                                                form={planFormId}
+                                                name="plan_name"
                                                 type="text"
                                                 required
-                                                defaultValue={pantry.pantry_name}
+                                                defaultValue={plan.plan_name}
                                                 className="w-full min-w-[180px] rounded border border-zinc-300 px-2 py-1 text-xs focus:border-blue-500 focus:outline-none"
                                             />
                                         </td>
                                         <td className="px-4 py-3">
-                                            <form id={pantryFormId} action={updatePantry} className="flex min-w-[150px] flex-col gap-2">
-                                                <input type="hidden" name="pantry_id" value={pantry.pantry_id} />
+                                            <input
+                                                form={planFormId}
+                                                name="start_date"
+                                                type="date"
+                                                defaultValue={plan.start_date ?? ""}
+                                                className="w-full min-w-[130px] rounded border border-zinc-300 px-2 py-1 text-xs focus:border-blue-500 focus:outline-none"
+                                            />
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <input
+                                                form={planFormId}
+                                                name="end_date"
+                                                type="date"
+                                                defaultValue={plan.end_date ?? ""}
+                                                className="w-full min-w-[130px] rounded border border-zinc-300 px-2 py-1 text-xs focus:border-blue-500 focus:outline-none"
+                                            />
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <form id={planFormId} action={updateMealPlan} className="flex min-w-[150px] flex-col gap-2">
+                                                <input type="hidden" name="meal_plan_id" value={plan.meal_plan_id} />
                                                 <button
                                                     type="submit"
                                                     className="rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
@@ -170,7 +215,7 @@ export async function PantryPanel({ supabaseUrl, supabaseAnonKey }: Props) {
                                                 </button>
                                                 <button
                                                     type="submit"
-                                                    formAction={deletePantry}
+                                                    formAction={deleteMealPlan}
                                                     className="rounded bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-1"
                                                 >
                                                     Delete
@@ -179,50 +224,46 @@ export async function PantryPanel({ supabaseUrl, supabaseAnonKey }: Props) {
                                         </td>
                                     </tr>
                                     <tr className="border-t border-zinc-100 bg-zinc-50/70">
-                                        <td colSpan={4} className="px-4 py-4">
+                                        <td colSpan={6} className="px-4 py-4">
                                             <div className="space-y-4">
                                                 <div>
-                                                    <h3 className="text-sm font-semibold text-zinc-900">Pantry items</h3>
-                                                    <p className="mt-1 text-xs text-zinc-600">Manage the items in pantry {pantry.pantry_id}.</p>
+                                                    <h3 className="text-sm font-semibold text-zinc-900">Meal plan items</h3>
+                                                    <p className="mt-1 text-xs text-zinc-600">Manage the items in meal plan {plan.meal_plan_id}.</p>
                                                 </div>
 
-                                                <form action={addPantryItem} className="grid gap-3 rounded-lg border border-zinc-200 bg-white p-4 lg:grid-cols-[minmax(180px,1.6fr)_minmax(120px,0.8fr)_minmax(120px,0.8fr)_minmax(100px,0.7fr)_minmax(120px,0.8fr)_auto]">
-                                                    <input type="hidden" name="pantry_id" value={pantry.pantry_id} />
+                                                <form action={addMealPlanItem} className="grid gap-3 rounded-lg border border-zinc-200 bg-white p-4 lg:grid-cols-[minmax(180px,1.6fr)_minmax(120px,0.8fr)_minmax(120px,0.8fr)_minmax(100px,0.7fr)_auto]">
+                                                    <input type="hidden" name="meal_plan_id" value={plan.meal_plan_id} />
                                                     <select
-                                                        name="ingredient_id"
+                                                        name="recipe_id"
                                                         required
                                                         defaultValue=""
                                                         className="rounded border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
                                                     >
                                                         <option value="" disabled>
-                                                            Select ingredient
+                                                            Select recipe
                                                         </option>
-                                                        {ingredients.map((ingredient) => (
-                                                            <option key={ingredient.ingredient_id} value={ingredient.ingredient_id}>
-                                                                {ingredient.name} ({ingredient.ingredient_id})
+                                                        {recipes.map((recipe) => (
+                                                            <option key={recipe.recipe_id} value={recipe.recipe_id}>
+                                                                {recipe.title} ({recipe.recipe_id})
                                                             </option>
                                                         ))}
                                                     </select>
                                                     <input
-                                                        name="quantity_on_hand"
-                                                        type="text"
-                                                        placeholder="Quantity"
-                                                        className="rounded border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-                                                    />
-                                                    <input
-                                                        name="unit"
-                                                        type="text"
-                                                        placeholder="Unit"
-                                                        className="rounded border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-                                                    />
-                                                    <input
-                                                        name="purchase_date"
+                                                        name="scheduled_for"
                                                         type="date"
                                                         className="rounded border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
                                                     />
                                                     <input
-                                                        name="expiration_date"
-                                                        type="date"
+                                                        name="meal_type"
+                                                        type="text"
+                                                        placeholder="Meal type"
+                                                        className="rounded border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                                                    />
+                                                    <input
+                                                        name="servings"
+                                                        type="number"
+                                                        min={1}
+                                                        placeholder="Servings"
                                                         className="rounded border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
                                                     />
                                                     <button
@@ -237,78 +278,69 @@ export async function PantryPanel({ supabaseUrl, supabaseAnonKey }: Props) {
                                                     <table className="min-w-full text-left text-xs">
                                                         <thead className="bg-zinc-100 text-zinc-700">
                                                             <tr>
-                                                                <th className="px-3 py-2 font-medium">pantry_item_id</th>
-                                                                <th className="px-3 py-2 font-medium">ingredient</th>
-                                                                <th className="px-3 py-2 font-medium">quantity_on_hand</th>
-                                                                <th className="px-3 py-2 font-medium">unit</th>
-                                                                <th className="px-3 py-2 font-medium">purchase_date</th>
-                                                                <th className="px-3 py-2 font-medium">expiration_date</th>
+                                                                <th className="px-3 py-2 font-medium">meal_plan_item_id</th>
+                                                                <th className="px-3 py-2 font-medium">recipe</th>
+                                                                <th className="px-3 py-2 font-medium">scheduled_for</th>
+                                                                <th className="px-3 py-2 font-medium">meal_type</th>
+                                                                <th className="px-3 py-2 font-medium">servings</th>
                                                                 <th className="px-3 py-2 font-medium">Modify</th>
                                                             </tr>
                                                         </thead>
                                                         <tbody>
                                                             {relatedItems.map((item) => {
-                                                                const itemFormId = `pantry-item-form-${item.pantry_item_id}`;
+                                                                const itemFormId = `meal-plan-item-form-${item.meal_plan_item_id}`;
 
                                                                 return (
-                                                                    <tr key={item.pantry_item_id} className="border-t border-zinc-200 align-top">
-                                                                        <td className="px-3 py-2 whitespace-nowrap">{item.pantry_item_id}</td>
+                                                                    <tr key={item.meal_plan_item_id} className="border-t border-zinc-200 align-top">
+                                                                        <td className="px-3 py-2 whitespace-nowrap">{item.meal_plan_item_id}</td>
                                                                         <td className="px-3 py-2">
                                                                             <select
                                                                                 form={itemFormId}
-                                                                                name="ingredient_id"
-                                                                                defaultValue={String(item.ingredient_id)}
+                                                                                name="recipe_id"
+                                                                                defaultValue={String(item.recipe_id)}
                                                                                 className="w-full min-w-[200px] rounded border border-zinc-300 px-2 py-1 text-xs focus:border-blue-500 focus:outline-none"
                                                                             >
-                                                                                {ingredients.map((ingredient) => (
-                                                                                    <option key={ingredient.ingredient_id} value={ingredient.ingredient_id}>
-                                                                                        {ingredient.name} ({ingredient.ingredient_id})
+                                                                                {recipes.map((recipe) => (
+                                                                                    <option key={recipe.recipe_id} value={recipe.recipe_id}>
+                                                                                        {recipe.title} ({recipe.recipe_id})
                                                                                     </option>
                                                                                 ))}
                                                                             </select>
                                                                             <div className="mt-1 text-[11px] text-zinc-500">
-                                                                                Current: {ingredientNameById.get(item.ingredient_id) ?? `Ingredient ${item.ingredient_id}`}
+                                                                                Current: {recipeTitleById.get(item.recipe_id) ?? `Recipe ${item.recipe_id}`}
                                                                             </div>
                                                                         </td>
                                                                         <td className="px-3 py-2">
                                                                             <input
                                                                                 form={itemFormId}
-                                                                                name="quantity_on_hand"
-                                                                                type="text"
-                                                                                defaultValue={item.quantity_on_hand ?? ""}
-                                                                                className="w-full min-w-[100px] rounded border border-zinc-300 px-2 py-1 text-xs focus:border-blue-500 focus:outline-none"
-                                                                            />
-                                                                        </td>
-                                                                        <td className="px-3 py-2">
-                                                                            <input
-                                                                                form={itemFormId}
-                                                                                name="unit"
-                                                                                type="text"
-                                                                                defaultValue={item.unit ?? ""}
-                                                                                className="w-full min-w-[100px] rounded border border-zinc-300 px-2 py-1 text-xs focus:border-blue-500 focus:outline-none"
-                                                                            />
-                                                                        </td>
-                                                                        <td className="px-3 py-2">
-                                                                            <input
-                                                                                form={itemFormId}
-                                                                                name="purchase_date"
+                                                                                name="scheduled_for"
                                                                                 type="date"
-                                                                                defaultValue={item.purchase_date ?? ""}
+                                                                                defaultValue={item.scheduled_for ?? ""}
                                                                                 className="w-full min-w-[130px] rounded border border-zinc-300 px-2 py-1 text-xs focus:border-blue-500 focus:outline-none"
                                                                             />
                                                                         </td>
                                                                         <td className="px-3 py-2">
                                                                             <input
                                                                                 form={itemFormId}
-                                                                                name="expiration_date"
-                                                                                type="date"
-                                                                                defaultValue={item.expiration_date ?? ""}
-                                                                                className="w-full min-w-[130px] rounded border border-zinc-300 px-2 py-1 text-xs focus:border-blue-500 focus:outline-none"
+                                                                                name="meal_type"
+                                                                                type="text"
+                                                                                defaultValue={item.meal_type ?? ""}
+                                                                                className="w-full min-w-[120px] rounded border border-zinc-300 px-2 py-1 text-xs focus:border-blue-500 focus:outline-none"
                                                                             />
                                                                         </td>
                                                                         <td className="px-3 py-2">
-                                                                            <form id={itemFormId} action={updatePantryItem} className="flex min-w-[140px] flex-col gap-2">
-                                                                                <input type="hidden" name="pantry_item_id" value={item.pantry_item_id} />
+                                                                            <input
+                                                                                form={itemFormId}
+                                                                                name="servings"
+                                                                                type="number"
+                                                                                min={1}
+                                                                                defaultValue={item.servings ?? ""}
+                                                                                className="w-full min-w-[80px] rounded border border-zinc-300 px-2 py-1 text-xs focus:border-blue-500 focus:outline-none"
+                                                                            />
+                                                                        </td>
+                                                                        <td className="px-3 py-2">
+                                                                            <form id={itemFormId} action={updateMealPlanItem} className="flex min-w-[140px] flex-col gap-2">
+                                                                                <input type="hidden" name="meal_plan_item_id" value={item.meal_plan_item_id} />
                                                                                 <button
                                                                                     type="submit"
                                                                                     className="rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
@@ -317,7 +349,7 @@ export async function PantryPanel({ supabaseUrl, supabaseAnonKey }: Props) {
                                                                                 </button>
                                                                                 <button
                                                                                     type="submit"
-                                                                                    formAction={deletePantryItem}
+                                                                                    formAction={deleteMealPlanItem}
                                                                                     className="rounded bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-1"
                                                                                 >
                                                                                     Delete
@@ -329,8 +361,8 @@ export async function PantryPanel({ supabaseUrl, supabaseAnonKey }: Props) {
                                                             })}
                                                             {relatedItems.length === 0 && (
                                                                 <tr className="border-t border-zinc-200">
-                                                                    <td className="px-3 py-3 text-zinc-500" colSpan={7}>
-                                                                        No pantry_item rows linked to this pantry yet.
+                                                                    <td className="px-3 py-3 text-zinc-500" colSpan={6}>
+                                                                        No meal_plan_item rows linked to this plan yet.
                                                                     </td>
                                                                 </tr>
                                                             )}
@@ -343,10 +375,10 @@ export async function PantryPanel({ supabaseUrl, supabaseAnonKey }: Props) {
                                 </Fragment>
                             );
                         })}
-                        {pantries.length === 0 && (
+                        {plans.length === 0 && (
                             <tr className="border-t border-zinc-200">
-                                <td className="px-4 py-3 text-zinc-500" colSpan={4}>
-                                    No pantry rows found.
+                                <td className="px-4 py-3 text-zinc-500" colSpan={6}>
+                                    No meal_plan rows found.
                                 </td>
                             </tr>
                         )}

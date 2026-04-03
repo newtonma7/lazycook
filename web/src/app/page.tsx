@@ -1,6 +1,9 @@
 import { unstable_noStore as noStore } from "next/cache";
 import { AccountPanel } from "./account";
 import { IngredientPanel } from "./ingredient";
+import { MealPlanPanel } from "./meal-plan";
+import { PantryPanel } from "./pantry";
+import { RecipePanel } from "./recipes";
 import { TableTabs } from "./table-tabs";
 
 /** Always read fresh data from Supabase; avoid cached RSC payload after mutations. */
@@ -12,7 +15,7 @@ type PageProps = {
 
 export default async function Home({ searchParams }: PageProps) {
   const params = await searchParams;
-  const activeTab = params.tab === "ingredient" ? "ingredient" : "account";
+  const activeTab = params.tab === "ingredient" || params.tab === "recipe" || params.tab === "pantry" || params.tab === "meal_plan" ? params.tab : "account";
 
   const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").trim().replace(/^"|"$/g, "");
   const supabaseAnonKey = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "").trim().replace(/^"|"$/g, "");
@@ -41,12 +44,18 @@ export default async function Home({ searchParams }: PageProps) {
 
       <section aria-labelledby="panel-heading" className="rounded-b-lg border border-t-0 border-zinc-200 bg-white p-6 shadow-sm">
         <h2 id="panel-heading" className="sr-only">
-          {activeTab === "account" ? "Account" : "Ingredient"} records
+          {activeTab === "account" ? "Account" : activeTab === "ingredient" ? "Ingredient" : activeTab === "recipe" ? "Recipe" : activeTab === "pantry" ? "Pantry" : "Meal Plan"} records
         </h2>
         {activeTab === "account" ? (
           <AccountPanel message={params.message} error={params.error} />
-        ) : (
+        ) : activeTab === "ingredient" ? (
           <IngredientPanel supabaseUrl={supabaseUrl} supabaseAnonKey={supabaseAnonKey} />
+        ) : activeTab === "recipe" ? (
+          <RecipePanel supabaseUrl={supabaseUrl} supabaseAnonKey={supabaseAnonKey} />
+        ) : activeTab === "pantry" ? (
+          <PantryPanel supabaseUrl={supabaseUrl} supabaseAnonKey={supabaseAnonKey} />
+        ) : (
+          <MealPlanPanel supabaseUrl={supabaseUrl} supabaseAnonKey={supabaseAnonKey} />
         )}
       </section>
     </main>

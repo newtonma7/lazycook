@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-type Tab = "account" | "ingredient";
+type Tab = "account" | "ingredient" | "recipe" | "pantry" | "meal_plan";
 
 type Props = {
   active: Tab;
@@ -28,6 +28,27 @@ export function TableTabs({ active }: Props) {
         aria-current={active === "ingredient" ? "page" : undefined}
       >
         Ingredients
+      </Link>
+      <Link
+        href="/?tab=recipe"
+        className={`${base} ${active === "recipe" ? activeCls : inactiveCls}`}
+        aria-current={active === "recipe" ? "page" : undefined}
+      >
+        Recipe
+      </Link>
+      <Link
+        href="/?tab=pantry"
+        className={`${base} ${active === "pantry" ? activeCls : inactiveCls}`}
+        aria-current={active === "pantry" ? "page" : undefined}
+      >
+        Pantry
+      </Link>
+      <Link
+        href="/?tab=meal_plan"
+        className={`${base} ${active === "meal_plan" ? activeCls : inactiveCls}`}
+        aria-current={active === "meal_plan" ? "page" : undefined}
+      >
+        Meal Plan
       </Link>
     </nav>
   );

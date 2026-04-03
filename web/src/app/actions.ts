@@ -306,6 +306,34 @@ function parseAllergen(raw: FormDataEntryValue | null): boolean {
   return s === "true" || s === "on";
 }
 
+function parseInteger(raw: FormDataEntryValue | null): number | null {
+  if (typeof raw !== "string") return null;
+
+  const value = raw.trim();
+  if (!value) return null;
+
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function parseOptionalInteger(raw: FormDataEntryValue | null): number | null {
+  return parseInteger(raw);
+}
+
+function parseOptionalText(raw: FormDataEntryValue | null): string | null {
+  if (typeof raw !== "string") return null;
+
+  const value = raw.trim();
+  return value ? value : null;
+}
+
+function parseOptionalNumeric(raw: FormDataEntryValue | null): string | null {
+  if (typeof raw !== "string") return null;
+
+  const value = raw.trim();
+  return value ? value : null;
+}
+
 export async function addIngredient(formData: FormData) {
   const { supabaseUrl, supabaseAnonKey } = getSupabaseEnv();
   if (!supabaseUrl || !supabaseAnonKey) return;
@@ -384,4 +412,482 @@ export async function deleteIngredient(formData: FormData) {
   }
 
   redirect("/?tab=ingredient");
+}
+
+export async function addRecipe(formData: FormData) {
+  const { supabaseUrl, supabaseAnonKey } = getSupabaseEnv();
+  if (!supabaseUrl || !supabaseAnonKey) return;
+
+  const title = (formData.get("title") as string)?.trim();
+  const description = parseOptionalText(formData.get("description"));
+  const instructions = parseOptionalText(formData.get("instructions"));
+  const prep_time_min = parseOptionalInteger(formData.get("prep_time_min"));
+  const cook_time_min = parseOptionalInteger(formData.get("cook_time_min"));
+  const servings = parseOptionalInteger(formData.get("servings"));
+  const is_public = parseAllergen(formData.get("is_public"));
+
+  if (!title) return;
+
+  const supabase = createClient(supabaseUrl, supabaseAnonKey);
+  const { error } = await supabase.from("recipe").insert([
+    {
+      title,
+      description,
+      instructions,
+      prep_time_min,
+      cook_time_min,
+      servings,
+      is_public,
+    },
+  ]);
+
+  if (error) {
+    console.error("Recipe insert error:", error.message);
+    return;
+  }
+
+  redirect("/?tab=recipe");
+}
+
+export async function updateRecipe(formData: FormData) {
+  const { supabaseUrl, supabaseAnonKey } = getSupabaseEnv();
+  if (!supabaseUrl || !supabaseAnonKey) return;
+
+  const recipe_id = parseInteger(formData.get("recipe_id"));
+  const title = (formData.get("title") as string)?.trim();
+  const description = parseOptionalText(formData.get("description"));
+  const instructions = parseOptionalText(formData.get("instructions"));
+  const prep_time_min = parseOptionalInteger(formData.get("prep_time_min"));
+  const cook_time_min = parseOptionalInteger(formData.get("cook_time_min"));
+  const servings = parseOptionalInteger(formData.get("servings"));
+  const is_public = parseAllergen(formData.get("is_public"));
+
+  if (!recipe_id || !title) return;
+
+  const supabase = createClient(supabaseUrl, supabaseAnonKey);
+  const { error } = await supabase
+    .from("recipe")
+    .update({
+      title,
+      description,
+      instructions,
+      prep_time_min,
+      cook_time_min,
+      servings,
+      is_public,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("recipe_id", recipe_id);
+
+  if (error) {
+    console.error("Recipe update error:", error.message);
+    return;
+  }
+
+  redirect("/?tab=recipe");
+}
+
+export async function deleteRecipe(formData: FormData) {
+  const { supabaseUrl, supabaseAnonKey } = getSupabaseEnv();
+  if (!supabaseUrl || !supabaseAnonKey) return;
+
+  const recipe_id = parseInteger(formData.get("recipe_id"));
+  if (!recipe_id) return;
+
+  const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+  const { error: ingredientError } = await supabase.from("recipe_ingredient").delete().eq("recipe_id", recipe_id);
+
+  if (ingredientError) {
+    console.error("Recipe ingredient delete error:", ingredientError.message);
+    return;
+  }
+
+  const { error } = await supabase.from("recipe").delete().eq("recipe_id", recipe_id);
+
+  if (error) {
+    console.error("Recipe delete error:", error.message);
+    return;
+  }
+
+  redirect("/?tab=recipe");
+}
+
+export async function addRecipeIngredient(formData: FormData) {
+  const { supabaseUrl, supabaseAnonKey } = getSupabaseEnv();
+  if (!supabaseUrl || !supabaseAnonKey) return;
+
+  const recipe_id = parseInteger(formData.get("recipe_id"));
+  const ingredient_id = parseInteger(formData.get("ingredient_id"));
+  const required_quantity = parseOptionalNumeric(formData.get("required_quantity"));
+  const unit = parseOptionalText(formData.get("unit"));
+  const is_optional = parseAllergen(formData.get("is_optional"));
+  const preparation_note = parseOptionalText(formData.get("preparation_note"));
+
+  if (!recipe_id || !ingredient_id) return;
+
+  const supabase = createClient(supabaseUrl, supabaseAnonKey);
+  const { error } = await supabase.from("recipe_ingredient").insert([
+    {
+      recipe_id,
+      ingredient_id,
+      required_quantity,
+      unit,
+      is_optional,
+      preparation_note,
+    },
+  ]);
+
+  if (error) {
+    console.error("Recipe ingredient insert error:", error.message);
+    return;
+  }
+
+  redirect("/?tab=recipe");
+}
+
+export async function updateRecipeIngredient(formData: FormData) {
+  const { supabaseUrl, supabaseAnonKey } = getSupabaseEnv();
+  if (!supabaseUrl || !supabaseAnonKey) return;
+
+  const recipe_id = parseInteger(formData.get("recipe_id"));
+  const original_ingredient_id = parseInteger(formData.get("original_ingredient_id"));
+  const ingredient_id = parseInteger(formData.get("ingredient_id"));
+  const required_quantity = parseOptionalNumeric(formData.get("required_quantity"));
+  const unit = parseOptionalText(formData.get("unit"));
+  const is_optional = parseAllergen(formData.get("is_optional"));
+  const preparation_note = parseOptionalText(formData.get("preparation_note"));
+
+  if (!recipe_id || !original_ingredient_id || !ingredient_id) return;
+
+  const supabase = createClient(supabaseUrl, supabaseAnonKey);
+  const { error } = await supabase
+    .from("recipe_ingredient")
+    .update({
+      ingredient_id,
+      required_quantity,
+      unit,
+      is_optional,
+      preparation_note,
+    })
+    .eq("recipe_id", recipe_id)
+    .eq("ingredient_id", original_ingredient_id);
+
+  if (error) {
+    console.error("Recipe ingredient update error:", error.message);
+    return;
+  }
+
+  redirect("/?tab=recipe");
+}
+
+export async function deleteRecipeIngredient(formData: FormData) {
+  const { supabaseUrl, supabaseAnonKey } = getSupabaseEnv();
+  if (!supabaseUrl || !supabaseAnonKey) return;
+
+  const recipe_id = parseInteger(formData.get("recipe_id"));
+  const ingredient_id = parseInteger(formData.get("ingredient_id"));
+  if (!recipe_id || !ingredient_id) return;
+
+  const supabase = createClient(supabaseUrl, supabaseAnonKey);
+  const { error } = await supabase
+    .from("recipe_ingredient")
+    .delete()
+    .eq("recipe_id", recipe_id)
+    .eq("ingredient_id", ingredient_id);
+
+  if (error) {
+    console.error("Recipe ingredient delete error:", error.message);
+    return;
+  }
+
+  redirect("/?tab=recipe");
+}
+
+/* ───────── Pantry CRUD ───────── */
+
+export async function addPantry(formData: FormData) {
+  const { supabaseUrl, supabaseAnonKey } = getSupabaseEnv();
+  if (!supabaseUrl || !supabaseAnonKey) return;
+
+  const pantry_name = (formData.get("pantry_name") as string)?.trim();
+  const consumer_id = parseOptionalInteger(formData.get("consumer_id"));
+  if (!pantry_name) return;
+
+  const supabase = createClient(supabaseUrl, supabaseAnonKey);
+  const { error } = await supabase.from("pantry").insert([
+    { pantry_name, consumer_id },
+  ]);
+
+  if (error) {
+    console.error("Pantry insert error:", error.message);
+    return;
+  }
+
+  redirect("/?tab=pantry");
+}
+
+export async function updatePantry(formData: FormData) {
+  const { supabaseUrl, supabaseAnonKey } = getSupabaseEnv();
+  if (!supabaseUrl || !supabaseAnonKey) return;
+
+  const pantry_id = parseInteger(formData.get("pantry_id"));
+  const pantry_name = (formData.get("pantry_name") as string)?.trim();
+  const consumer_id = parseOptionalInteger(formData.get("consumer_id"));
+  if (!pantry_id || !pantry_name) return;
+
+  const supabase = createClient(supabaseUrl, supabaseAnonKey);
+  const { error } = await supabase
+    .from("pantry")
+    .update({ pantry_name, consumer_id })
+    .eq("pantry_id", pantry_id);
+
+  if (error) {
+    console.error("Pantry update error:", error.message);
+    return;
+  }
+
+  redirect("/?tab=pantry");
+}
+
+export async function deletePantry(formData: FormData) {
+  const { supabaseUrl, supabaseAnonKey } = getSupabaseEnv();
+  if (!supabaseUrl || !supabaseAnonKey) return;
+
+  const pantry_id = parseInteger(formData.get("pantry_id"));
+  if (!pantry_id) return;
+
+  const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+  const { error: itemError } = await supabase.from("pantry_item").delete().eq("pantry_id", pantry_id);
+  if (itemError) {
+    console.error("Pantry item delete error:", itemError.message);
+    return;
+  }
+
+  const { error } = await supabase.from("pantry").delete().eq("pantry_id", pantry_id);
+  if (error) {
+    console.error("Pantry delete error:", error.message);
+    return;
+  }
+
+  redirect("/?tab=pantry");
+}
+
+/* ───────── Pantry Item CRUD ───────── */
+
+export async function addPantryItem(formData: FormData) {
+  const { supabaseUrl, supabaseAnonKey } = getSupabaseEnv();
+  if (!supabaseUrl || !supabaseAnonKey) return;
+
+  const pantry_id = parseInteger(formData.get("pantry_id"));
+  const ingredient_id = parseInteger(formData.get("ingredient_id"));
+  const purchase_date = parseOptionalText(formData.get("purchase_date"));
+  const quantity_on_hand = parseOptionalNumeric(formData.get("quantity_on_hand"));
+  const unit = parseOptionalText(formData.get("unit"));
+  const expiration_date = parseOptionalText(formData.get("expiration_date"));
+
+  if (!pantry_id || !ingredient_id) return;
+
+  const supabase = createClient(supabaseUrl, supabaseAnonKey);
+  const { error } = await supabase.from("pantry_item").insert([
+    { pantry_id, ingredient_id, purchase_date, quantity_on_hand, unit, expiration_date },
+  ]);
+
+  if (error) {
+    console.error("Pantry item insert error:", error.message);
+    return;
+  }
+
+  redirect("/?tab=pantry");
+}
+
+export async function updatePantryItem(formData: FormData) {
+  const { supabaseUrl, supabaseAnonKey } = getSupabaseEnv();
+  if (!supabaseUrl || !supabaseAnonKey) return;
+
+  const pantry_item_id = parseInteger(formData.get("pantry_item_id"));
+  const ingredient_id = parseInteger(formData.get("ingredient_id"));
+  const purchase_date = parseOptionalText(formData.get("purchase_date"));
+  const quantity_on_hand = parseOptionalNumeric(formData.get("quantity_on_hand"));
+  const unit = parseOptionalText(formData.get("unit"));
+  const expiration_date = parseOptionalText(formData.get("expiration_date"));
+
+  if (!pantry_item_id || !ingredient_id) return;
+
+  const supabase = createClient(supabaseUrl, supabaseAnonKey);
+  const { error } = await supabase
+    .from("pantry_item")
+    .update({ ingredient_id, purchase_date, quantity_on_hand, unit, expiration_date })
+    .eq("pantry_item_id", pantry_item_id);
+
+  if (error) {
+    console.error("Pantry item update error:", error.message);
+    return;
+  }
+
+  redirect("/?tab=pantry");
+}
+
+export async function deletePantryItem(formData: FormData) {
+  const { supabaseUrl, supabaseAnonKey } = getSupabaseEnv();
+  if (!supabaseUrl || !supabaseAnonKey) return;
+
+  const pantry_item_id = parseInteger(formData.get("pantry_item_id"));
+  if (!pantry_item_id) return;
+
+  const supabase = createClient(supabaseUrl, supabaseAnonKey);
+  const { error } = await supabase.from("pantry_item").delete().eq("pantry_item_id", pantry_item_id);
+
+  if (error) {
+    console.error("Pantry item delete error:", error.message);
+    return;
+  }
+
+  redirect("/?tab=pantry");
+}
+
+/* ───────── Meal Plan CRUD ───────── */
+
+export async function addMealPlan(formData: FormData) {
+  const { supabaseUrl, supabaseAnonKey } = getSupabaseEnv();
+  if (!supabaseUrl || !supabaseAnonKey) return;
+
+  const plan_name = (formData.get("plan_name") as string)?.trim();
+  const consumer_id = parseOptionalInteger(formData.get("consumer_id"));
+  const start_date = parseOptionalText(formData.get("start_date"));
+  const end_date = parseOptionalText(formData.get("end_date"));
+  if (!plan_name) return;
+
+  const supabase = createClient(supabaseUrl, supabaseAnonKey);
+  const { error } = await supabase.from("meal_plan").insert([
+    { plan_name, consumer_id, start_date, end_date },
+  ]);
+
+  if (error) {
+    console.error("Meal plan insert error:", error.message);
+    return;
+  }
+
+  redirect("/?tab=meal_plan");
+}
+
+export async function updateMealPlan(formData: FormData) {
+  const { supabaseUrl, supabaseAnonKey } = getSupabaseEnv();
+  if (!supabaseUrl || !supabaseAnonKey) return;
+
+  const meal_plan_id = parseInteger(formData.get("meal_plan_id"));
+  const plan_name = (formData.get("plan_name") as string)?.trim();
+  const consumer_id = parseOptionalInteger(formData.get("consumer_id"));
+  const start_date = parseOptionalText(formData.get("start_date"));
+  const end_date = parseOptionalText(formData.get("end_date"));
+  if (!meal_plan_id || !plan_name) return;
+
+  const supabase = createClient(supabaseUrl, supabaseAnonKey);
+  const { error } = await supabase
+    .from("meal_plan")
+    .update({ plan_name, consumer_id, start_date, end_date })
+    .eq("meal_plan_id", meal_plan_id);
+
+  if (error) {
+    console.error("Meal plan update error:", error.message);
+    return;
+  }
+
+  redirect("/?tab=meal_plan");
+}
+
+export async function deleteMealPlan(formData: FormData) {
+  const { supabaseUrl, supabaseAnonKey } = getSupabaseEnv();
+  if (!supabaseUrl || !supabaseAnonKey) return;
+
+  const meal_plan_id = parseInteger(formData.get("meal_plan_id"));
+  if (!meal_plan_id) return;
+
+  const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+  const { error: itemError } = await supabase.from("meal_plan_item").delete().eq("meal_plan_id", meal_plan_id);
+  if (itemError) {
+    console.error("Meal plan item delete error:", itemError.message);
+    return;
+  }
+
+  const { error } = await supabase.from("meal_plan").delete().eq("meal_plan_id", meal_plan_id);
+  if (error) {
+    console.error("Meal plan delete error:", error.message);
+    return;
+  }
+
+  redirect("/?tab=meal_plan");
+}
+
+/* ───────── Meal Plan Item CRUD ───────── */
+
+export async function addMealPlanItem(formData: FormData) {
+  const { supabaseUrl, supabaseAnonKey } = getSupabaseEnv();
+  if (!supabaseUrl || !supabaseAnonKey) return;
+
+  const meal_plan_id = parseInteger(formData.get("meal_plan_id"));
+  const recipe_id = parseInteger(formData.get("recipe_id"));
+  const scheduled_for = parseOptionalText(formData.get("scheduled_for"));
+  const meal_type = parseOptionalText(formData.get("meal_type"));
+  const servings = parseOptionalInteger(formData.get("servings"));
+
+  if (!meal_plan_id || !recipe_id) return;
+
+  const supabase = createClient(supabaseUrl, supabaseAnonKey);
+  const { error } = await supabase.from("meal_plan_item").insert([
+    { meal_plan_id, recipe_id, scheduled_for, meal_type, servings },
+  ]);
+
+  if (error) {
+    console.error("Meal plan item insert error:", error.message);
+    return;
+  }
+
+  redirect("/?tab=meal_plan");
+}
+
+export async function updateMealPlanItem(formData: FormData) {
+  const { supabaseUrl, supabaseAnonKey } = getSupabaseEnv();
+  if (!supabaseUrl || !supabaseAnonKey) return;
+
+  const meal_plan_item_id = parseInteger(formData.get("meal_plan_item_id"));
+  const recipe_id = parseInteger(formData.get("recipe_id"));
+  const scheduled_for = parseOptionalText(formData.get("scheduled_for"));
+  const meal_type = parseOptionalText(formData.get("meal_type"));
+  const servings = parseOptionalInteger(formData.get("servings"));
+
+  if (!meal_plan_item_id || !recipe_id) return;
+
+  const supabase = createClient(supabaseUrl, supabaseAnonKey);
+  const { error } = await supabase
+    .from("meal_plan_item")
+    .update({ recipe_id, scheduled_for, meal_type, servings })
+    .eq("meal_plan_item_id", meal_plan_item_id);
+
+  if (error) {
+    console.error("Meal plan item update error:", error.message);
+    return;
+  }
+
+  redirect("/?tab=meal_plan");
+}
+
+export async function deleteMealPlanItem(formData: FormData) {
+  const { supabaseUrl, supabaseAnonKey } = getSupabaseEnv();
+  if (!supabaseUrl || !supabaseAnonKey) return;
+
+  const meal_plan_item_id = parseInteger(formData.get("meal_plan_item_id"));
+  if (!meal_plan_item_id) return;
+
+  const supabase = createClient(supabaseUrl, supabaseAnonKey);
+  const { error } = await supabase.from("meal_plan_item").delete().eq("meal_plan_item_id", meal_plan_item_id);
+
+  if (error) {
+    console.error("Meal plan item delete error:", error.message);
+    return;
+  }
+
+  redirect("/?tab=meal_plan");
 }
