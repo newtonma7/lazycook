@@ -418,6 +418,8 @@ export async function addRecipe(formData: FormData) {
   const { supabaseUrl, supabaseAnonKey } = getSupabaseEnv();
   if (!supabaseUrl || !supabaseAnonKey) return;
 
+  const consumer_id = parseInteger(formData.get("consumer_id"));
+  const admin_id = parseInteger(formData.get("admin_id"));
   const title = (formData.get("title") as string)?.trim();
   const description = parseOptionalText(formData.get("description"));
   const instructions = parseOptionalText(formData.get("instructions"));
@@ -426,11 +428,13 @@ export async function addRecipe(formData: FormData) {
   const servings = parseOptionalInteger(formData.get("servings"));
   const is_public = parseAllergen(formData.get("is_public"));
 
-  if (!title) return;
+  if (!consumer_id || !admin_id || !title) return;
 
   const supabase = createClient(supabaseUrl, supabaseAnonKey);
   const { error } = await supabase.from("recipe").insert([
     {
+      consumer_id,
+      admin_id,
       title,
       description,
       instructions,
@@ -454,6 +458,8 @@ export async function updateRecipe(formData: FormData) {
   if (!supabaseUrl || !supabaseAnonKey) return;
 
   const recipe_id = parseInteger(formData.get("recipe_id"));
+  const consumer_id = parseInteger(formData.get("consumer_id"));
+  const admin_id = parseInteger(formData.get("admin_id"));
   const title = (formData.get("title") as string)?.trim();
   const description = parseOptionalText(formData.get("description"));
   const instructions = parseOptionalText(formData.get("instructions"));
@@ -462,12 +468,14 @@ export async function updateRecipe(formData: FormData) {
   const servings = parseOptionalInteger(formData.get("servings"));
   const is_public = parseAllergen(formData.get("is_public"));
 
-  if (!recipe_id || !title) return;
+  if (!recipe_id || !consumer_id || !admin_id || !title) return;
 
   const supabase = createClient(supabaseUrl, supabaseAnonKey);
   const { error } = await supabase
     .from("recipe")
     .update({
+      consumer_id,
+      admin_id,
       title,
       description,
       instructions,
@@ -754,10 +762,10 @@ export async function addMealPlan(formData: FormData) {
   if (!supabaseUrl || !supabaseAnonKey) return;
 
   const plan_name = (formData.get("plan_name") as string)?.trim();
-  const consumer_id = parseOptionalInteger(formData.get("consumer_id"));
+  const consumer_id = parseInteger(formData.get("consumer_id"));
   const start_date = parseOptionalText(formData.get("start_date"));
   const end_date = parseOptionalText(formData.get("end_date"));
-  if (!plan_name) return;
+  if (!plan_name || !consumer_id) return;
 
   const supabase = createClient(supabaseUrl, supabaseAnonKey);
   const { error } = await supabase.from("meal_plan").insert([
@@ -778,10 +786,10 @@ export async function updateMealPlan(formData: FormData) {
 
   const meal_plan_id = parseInteger(formData.get("meal_plan_id"));
   const plan_name = (formData.get("plan_name") as string)?.trim();
-  const consumer_id = parseOptionalInteger(formData.get("consumer_id"));
+  const consumer_id = parseInteger(formData.get("consumer_id"));
   const start_date = parseOptionalText(formData.get("start_date"));
   const end_date = parseOptionalText(formData.get("end_date"));
-  if (!meal_plan_id || !plan_name) return;
+  if (!meal_plan_id || !plan_name || !consumer_id) return;
 
   const supabase = createClient(supabaseUrl, supabaseAnonKey);
   const { error } = await supabase

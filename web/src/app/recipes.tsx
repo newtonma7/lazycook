@@ -11,6 +11,8 @@ import {
 
 export type RecipeRow = {
     recipe_id: number;
+    consumer_id: number | null;
+    admin_id: number | null;
     title: string;
     description: string | null;
     instructions: string | null;
@@ -60,7 +62,7 @@ export async function RecipePanel({ supabaseUrl, supabaseAnonKey }: Props) {
         await Promise.all([
             supabase
                 .from("recipe")
-                .select("recipe_id, title, description, instructions, prep_time_min, cook_time_min, servings, created_at, updated_at, is_public")
+                .select("recipe_id, consumer_id, admin_id, title, description, instructions, prep_time_min, cook_time_min, servings, created_at, updated_at, is_public")
                 .order("recipe_id", { ascending: true }),
             supabase
                 .from("recipe_ingredient")
@@ -98,6 +100,34 @@ export async function RecipePanel({ supabaseUrl, supabaseAnonKey }: Props) {
             <div className="mb-8 rounded-lg border border-zinc-200 bg-zinc-50 p-6">
                 <h2 className="mb-4 text-lg font-medium">Add New Recipe</h2>
                 <form action={addRecipe} className="grid gap-4 lg:grid-cols-2">
+                    <div className="flex flex-col gap-1">
+                        <label htmlFor="recipe-consumer-id" className="text-sm text-zinc-600">
+                            Consumer ID
+                        </label>
+                        <input
+                            id="recipe-consumer-id"
+                            name="consumer_id"
+                            type="number"
+                            min={1}
+                            required
+                            className="rounded border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                        />
+                    </div>
+
+                    <div className="flex flex-col gap-1">
+                        <label htmlFor="recipe-admin-id" className="text-sm text-zinc-600">
+                            Admin ID
+                        </label>
+                        <input
+                            id="recipe-admin-id"
+                            name="admin_id"
+                            type="number"
+                            min={1}
+                            required
+                            className="rounded border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                        />
+                    </div>
+
                     <div className="flex flex-col gap-1">
                         <label htmlFor="recipe-title" className="text-sm text-zinc-600">
                             Title
@@ -205,6 +235,8 @@ export async function RecipePanel({ supabaseUrl, supabaseAnonKey }: Props) {
                     <thead className="bg-zinc-100">
                         <tr>
                             <th className="px-4 py-3 font-medium">recipe_id</th>
+                            <th className="px-4 py-3 font-medium">consumer_id</th>
+                            <th className="px-4 py-3 font-medium">admin_id</th>
                             <th className="px-4 py-3 font-medium">title</th>
                             <th className="px-4 py-3 font-medium">description</th>
                             <th className="px-4 py-3 font-medium">instructions</th>
@@ -226,6 +258,28 @@ export async function RecipePanel({ supabaseUrl, supabaseAnonKey }: Props) {
                                 <Fragment key={recipe.recipe_id}>
                                     <tr className="border-t border-zinc-200 align-top">
                                         <td className="px-4 py-3 whitespace-nowrap">{recipe.recipe_id}</td>
+                                        <td className="px-4 py-3">
+                                            <input
+                                                form={recipeFormId}
+                                                name="consumer_id"
+                                                type="number"
+                                                min={1}
+                                                required
+                                                defaultValue={recipe.consumer_id ?? ""}
+                                                className="w-full min-w-[92px] rounded border border-zinc-300 px-2 py-1 text-xs focus:border-blue-500 focus:outline-none"
+                                            />
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <input
+                                                form={recipeFormId}
+                                                name="admin_id"
+                                                type="number"
+                                                min={1}
+                                                required
+                                                defaultValue={recipe.admin_id ?? ""}
+                                                className="w-full min-w-[92px] rounded border border-zinc-300 px-2 py-1 text-xs focus:border-blue-500 focus:outline-none"
+                                            />
+                                        </td>
                                         <td className="px-4 py-3">
                                             <input
                                                 form={recipeFormId}
@@ -317,7 +371,7 @@ export async function RecipePanel({ supabaseUrl, supabaseAnonKey }: Props) {
                                         </td>
                                     </tr>
                                     <tr key={`recipe-ingredients-${recipe.recipe_id}`} className="border-t border-zinc-100 bg-zinc-50/70">
-                                        <td colSpan={11} className="px-4 py-4">
+                                        <td colSpan={13} className="px-4 py-4">
                                             <div className="space-y-4">
                                                 <div>
                                                     <h3 className="text-sm font-semibold text-zinc-900">Recipe ingredients</h3>
@@ -488,7 +542,7 @@ export async function RecipePanel({ supabaseUrl, supabaseAnonKey }: Props) {
                         })}
                         {recipes.length === 0 && (
                             <tr className="border-t border-zinc-200">
-                                <td className="px-4 py-3 text-zinc-500" colSpan={11}>
+                                <td className="px-4 py-3 text-zinc-500" colSpan={13}>
                                     No recipe rows found.
                                 </td>
                             </tr>

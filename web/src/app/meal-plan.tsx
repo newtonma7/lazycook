@@ -99,13 +99,14 @@ export async function MealPlanPanel({ supabaseUrl, supabaseAnonKey }: Props) {
 
                     <div className="flex flex-col gap-1">
                         <label htmlFor="mp-consumer" className="text-sm text-zinc-600">
-                            Consumer ID (optional)
+                            Consumer ID
                         </label>
                         <input
                             id="mp-consumer"
                             name="consumer_id"
                             type="number"
                             min={1}
+                            required
                             className="rounded border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
                         />
                     </div>
@@ -172,6 +173,7 @@ export async function MealPlanPanel({ supabaseUrl, supabaseAnonKey }: Props) {
                                                 name="consumer_id"
                                                 type="number"
                                                 min={1}
+                                                required
                                                 defaultValue={plan.consumer_id ?? ""}
                                                 className="w-full min-w-[80px] rounded border border-zinc-300 px-2 py-1 text-xs focus:border-blue-500 focus:outline-none"
                                             />
