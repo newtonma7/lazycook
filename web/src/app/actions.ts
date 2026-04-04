@@ -430,6 +430,7 @@ export async function addRecipe(formData: FormData) {
 
   if (!consumer_id || !admin_id || !title) return;
 
+  const timestamp = new Date().toISOString();
   const supabase = createClient(supabaseUrl, supabaseAnonKey);
   const { error } = await supabase.from("recipe").insert([
     {
@@ -442,6 +443,8 @@ export async function addRecipe(formData: FormData) {
       cook_time_min,
       servings,
       is_public,
+      created_at: timestamp,
+      updated_at: timestamp,
     },
   ]);
 
