@@ -1,6 +1,7 @@
 import Link from "next/link";
 
-type Tab = "account" | "ingredient" | "recipe" | "pantry" | "meal_plan";
+// 1. Added "ai-recipe" to the union and EXPORTED it
+export type Tab = "account" | "ingredient" | "recipe" | "pantry" | "meal_plan" | "ai-recipe";
 
 type Props = {
   active: Tab;
@@ -49,6 +50,14 @@ export function TableTabs({ active }: Props) {
         aria-current={active === "meal_plan" ? "page" : undefined}
       >
         Meal Plan
+      </Link>
+      <Link
+        href="/?tab=ai-recipe"
+        // 2. This comparison now works because "ai-recipe" is part of the Tab type
+        className={`${base} ${active === "ai-recipe" ? activeCls : inactiveCls}`}
+        aria-current={active === "ai-recipe" ? "page" : undefined}
+      >
+        AI Chef
       </Link>
     </nav>
   );

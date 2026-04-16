@@ -4,9 +4,10 @@ import { IngredientPanel } from "./ingredient";
 import { MealPlanPanel } from "./meal-plan";
 import { PantryPanel } from "./pantry";
 import { RecipePanel } from "./recipes";
-import { TableTabs } from "./table-tabs";
+import { AiRecipePanel } from "./ai-recipe-panel";
+import { TableTabs, type Tab } from "./table-tabs";
 
-/** Always read fresh data from Supabase; avoid cached RSC payload after mutations. */
+
 export const dynamic = "force-dynamic";
 
 type PageProps = {
@@ -15,7 +16,16 @@ type PageProps = {
 
 export default async function Home({ searchParams }: PageProps) {
   const params = await searchParams;
-  const activeTab = params.tab === "ingredient" || params.tab === "recipe" || params.tab === "pantry" || params.tab === "meal_plan" ? params.tab : "account";
+
+  const activeTab = (
+    params.tab === "ingredient" || 
+    params.tab === "recipe" || 
+    params.tab === "pantry" || 
+    params.tab === "meal_plan" || 
+    params.tab === "ai-recipe" 
+      ? params.tab 
+      : "account"
+  ) as Tab;
 
   const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").trim().replace(/^"|"$/g, "");
   const supabaseAnonKey = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "").trim().replace(/^"|"$/g, "");
@@ -44,18 +54,31 @@ export default async function Home({ searchParams }: PageProps) {
 
       <section aria-labelledby="panel-heading" className="rounded-b-lg border border-t-0 border-zinc-200 bg-white p-6 shadow-sm">
         <h2 id="panel-heading" className="sr-only">
-          {activeTab === "account" ? "Account" : activeTab === "ingredient" ? "Ingredient" : activeTab === "recipe" ? "Recipe" : activeTab === "pantry" ? "Pantry" : "Meal Plan"} records
+          {activeTab === "account" && "Account records"}
+          {activeTab === "ingredient" && "Ingredient records"}
+          {activeTab === "recipe" && "Recipe records"}
+          {activeTab === "pantry" && "Pantry records"}
+          {activeTab === "meal_plan" && "Meal Plan records"}
+          {activeTab === "ai-recipe" && "AI Chef records"}
         </h2>
-        {activeTab === "account" ? (
+
+        {activeTab === "account" && (
           <AccountPanel message={params.message} error={params.error} />
-        ) : activeTab === "ingredient" ? (
+        )}
+        {activeTab === "ingredient" && (
           <IngredientPanel supabaseUrl={supabaseUrl} supabaseAnonKey={supabaseAnonKey} />
-        ) : activeTab === "recipe" ? (
+        )}
+        {activeTab === "recipe" && (
           <RecipePanel supabaseUrl={supabaseUrl} supabaseAnonKey={supabaseAnonKey} />
-        ) : activeTab === "pantry" ? (
+        )}
+        {activeTab === "pantry" && (
           <PantryPanel supabaseUrl={supabaseUrl} supabaseAnonKey={supabaseAnonKey} />
-        ) : (
+        )}
+        {activeTab === "meal_plan" && (
           <MealPlanPanel supabaseUrl={supabaseUrl} supabaseAnonKey={supabaseAnonKey} />
+        )}
+        {activeTab === "ai-recipe" && (
+          <AiRecipePanel supabaseUrl={supabaseUrl} supabaseAnonKey={supabaseAnonKey} />
         )}
       </section>
     </main>
