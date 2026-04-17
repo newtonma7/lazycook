@@ -230,22 +230,12 @@ export async function getCurrentAccount() {
     });
 
     if (setSessionError) {
-        await clearAccountSession();
         return null;
     }
 
     const { data, error } = await supabase.auth.getUser();
     if (error || !data.user) {
-        await clearAccountSession();
         return null;
-    }
-
-    const nextSession = data.user ? (await supabase.auth.getSession()).data.session : null;
-    if (nextSession) {
-        await setAccountSession({
-            accessToken: nextSession.access_token,
-            refreshToken: nextSession.refresh_token,
-        });
     }
 
     return mapCurrentAccount(data.user as unknown as AccountRow);
