@@ -8,7 +8,7 @@ interface Recipe {
   id: number;
   title: string;
   description: string;
-  ingredients: string;
+  ingredients: string[];
   instructions: string[];
   prepTime: string;
 }
@@ -54,22 +54,46 @@ export function AiRecipePanel({ supabaseUrl, supabaseAnonKey }: { supabaseUrl: s
     setRecipes([]); 
     setSelectedRecipe(null);
 
-    const prompt = `
-      [ROLE] Michelin-Star Executive Chef.
+const prompt = `
+      [ROLE] Michelin-Star Executive Chef and Culinary Architect.
+      
       [GOAL] Generate 1-3 high-concept gourmet recipes using: ${ingredients.join(", ")}.
-      [INSTRUCTIONS]
-      - Use technique-driven, sensory language.
+      
+      [EXECUTION STRATEGY: MICRO-STEPS]
+      - Break the cooking process into MANY distinct, highly specific micro-steps. Aim for 8 to 12 steps per recipe.
+      - Do NOT clump actions together. 
+      - Keep each step punchy and readable (maximum 2 sentences per step), but include sensory cues (e.g., "sear until mahogany").
       - NO safety warnings or common-sense alerts.
-      - Each step in the "instructions" array must be a single technical action.
-      - Use "Ingredient (Quantity)" format for the ingredients string.
-      [SCHEMA] Return a JSON array: [{"id": 1, "title": "Name", "description": "Hook", "prepTime": "XX mins", "ingredients": "Markdown list", "instructions": ["Step 1", "Step 2"]}]
+      
+      [SCHEMA (STRICT JSON)] Return an array of objects EXACTLY matching this structure: 
+      [
+        {
+          "id": 1, 
+          "title": "Name", 
+          "description": "Hook", 
+          "prepTime": "XX mins", 
+          "ingredients": ["Ingredient 1 (Quantity)", "Ingredient 2 (Quantity)"], 
+          "instructions": ["Step 1 (max 2 sentences)", "Step 2...", "Step 3...", "Step 4..."]
+        }
+      ]
     `;
 
     try {
       const res = await fetch("http://127.0.0.1:11434/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ model: selectedModel, prompt, stream: false, format: "json" }),
+        body: JSON.stringify({ 
+          model: selectedModel, 
+          prompt: prompt, 
+          stream: false, 
+          format: "json",
+          // THE API OVERRIDE: This forces the model to talk more and think deeper
+          options: {
+            num_predict: 8192, // Unlocks massive output limits
+            temperature: 0.8,  // Prevents the model from giving repetitive, safe, short answers
+            top_p: 0.9
+          }
+        }),
       });
 
       const data = await res.json();
@@ -116,7 +140,7 @@ export function AiRecipePanel({ supabaseUrl, supabaseAnonKey }: { supabaseUrl: s
         </div>
       </div>
 
-      {/* 2. SETUP INSTRUCTIONS (Llama 4 Optimized) */}
+      {/* 2. SETUP INSTRUCTIONS (Gemma 4 Optimized) */}
       {showSetup && (
         <div className="rounded-2xl border border-emerald-100 bg-emerald-50/30 p-8 text-sm text-zinc-600 animate-in fade-in slide-in-from-top-4 duration-500">
           <div className="flex justify-between items-start mb-6">
@@ -196,7 +220,15 @@ export function AiRecipePanel({ supabaseUrl, supabaseAnonKey }: { supabaseUrl: s
                     <span className="h-px w-4 bg-emerald-500" /> Mise En Place
                   </h5>
                   <div className="flex flex-wrap gap-2">
-                    {selectedRecipe.ingredients.split('\n').filter(i => i.trim()).map((item, idx) => (
+                    {/* SAFE MAP: Checks if it's an array first to prevent crashes */}
+                    {(Array.isArray(selectedRecipe.ingredients) 
+                      ? selectedRecipe.ingredients 
+                      : typeof selectedRecipe.ingredients === 'string' 
+                        ? (selectedRecipe.ingredients as string).split('\n') 
+                        : []
+                    )
+                    .filter(i => typeof i === 'string' && i.trim())
+                    .map((item, idx) => (
                       <div key={idx} className="rounded-xl border border-zinc-100 bg-zinc-50/50 px-4 py-2.5 hover:bg-white hover:border-emerald-200 transition-all hover:shadow-sm">
                         <p className="text-[12px] font-bold text-zinc-700 leading-tight">
                           {item.replace(/^[*-]\s*/, '').trim()}
@@ -205,6 +237,7 @@ export function AiRecipePanel({ supabaseUrl, supabaseAnonKey }: { supabaseUrl: s
                     ))}
                   </div>
                 </div>
+
               </div>
 
               <div className="lg:col-span-8 space-y-8">
