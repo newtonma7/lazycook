@@ -270,40 +270,73 @@ export function AiRecipePanel({ supabaseUrl, supabaseAnonKey }: { supabaseUrl: s
           ========================================= */}
       <div className="flex-1 space-y-8 min-w-0 transition-all duration-300">
         
-        <div className="flex flex-col md:flex-row items-center justify-between rounded-3xl bg-white border border-zinc-200 p-5 shadow-sm gap-4">
-          <div className="flex items-center gap-5">
-            <div className="flex flex-col">
-              <h3 className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em]">Kitchen Link</h3>
-              <div className="flex items-center gap-2 mt-1">
-                <span className={`h-2 w-2 rounded-full ${ollamaStatus === "connected" ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" : "bg-red-400"}`} />
-                <span className="text-xs font-bold text-zinc-600 uppercase tracking-tight">{ollamaStatus === "connected" ? "Chef Ready" : "Chef Offline"}</span>
-              </div>
-            </div>
-            {ollamaStatus === "connected" && (
-              <select value={selectedModel} onChange={(e) => setSelectedModel(e.target.value)} className="rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-xs font-bold text-zinc-600 outline-none hover:border-emerald-400 transition-colors cursor-pointer">
-                {models.map(m => <option key={m.name} value={m.name}>{m.name}</option>)}
-              </select>
-            )}
-          </div>
-          <div className="flex flex-wrap items-center justify-end gap-4">
-            <button onClick={() => setIsPantryVisible(!isPantryVisible)} className="text-[10px] font-black text-zinc-400 hover:text-emerald-600 transition-colors uppercase tracking-widest">
-              {isPantryVisible ? "Hide Pantry" : "Show Pantry"}
+        {/* 1. STATUS HEADER (Compact & Responsive) */}
+        <div className="flex flex-col md:flex-row items-center justify-between rounded-3xl bg-white border border-zinc-200 p-4 shadow-sm gap-4">
+          
+          {/* TOP/LEFT COMPARTMENT: Pantry Toggle & System Status */}
+          <div className="flex w-full md:w-auto items-center justify-between md:justify-start gap-4">
+            
+            {/* Minimalist Pantry Toggle */}
+            <button 
+              onClick={() => setIsPantryVisible(!isPantryVisible)} 
+              className="flex items-center gap-1.5 text-zinc-400 hover:text-emerald-500 transition-colors group p-1"
+            >
+              <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h7" />
+              </svg>
+              <span className="text-[9px] font-black uppercase tracking-widest hidden sm:block mt-0.5">
+                {isPantryVisible ? "Hide Pantry" : "Show Pantry"}
+              </span>
             </button>
-            <button onClick={() => setShowSetup(!showSetup)} className="text-[10px] font-black text-zinc-400 hover:text-emerald-600 transition-colors uppercase tracking-widest">
+
+            {/* Divider (Desktop only) */}
+            <div className="hidden md:block w-px h-4 bg-zinc-200"></div>
+
+            {/* Compact Kitchen Link */}
+            <div className="flex items-center gap-2">
+              <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${ollamaStatus === "connected" ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" : "bg-red-400"}`} />
+              <span className="text-[9px] font-black text-zinc-400 uppercase tracking-widest shrink-0 mt-0.5">
+                Link: <span className={ollamaStatus === "connected" ? "text-emerald-600" : "text-red-500"}>
+                  {ollamaStatus === "connected" ? "Online" : "Offline"}
+                </span>
+              </span>
+              {ollamaStatus === "connected" && (
+                <select 
+                  value={selectedModel} 
+                  onChange={(e) => setSelectedModel(e.target.value)} 
+                  className="ml-1 bg-transparent text-[9px] font-bold text-zinc-700 outline-none hover:text-emerald-500 transition-colors cursor-pointer max-w-[100px] md:max-w-[140px] text-ellipsis overflow-hidden shrink-0"
+                >
+                  {models.map(m => <option key={m.name} value={m.name}>{m.name}</option>)}
+                </select>
+              )}
+            </div>
+          </div>
+
+          {/* BOTTOM/RIGHT COMPARTMENT: Action Buttons */}
+          <div className="flex w-full md:w-auto items-center justify-between md:justify-end gap-5 pt-3 md:pt-0 border-t border-zinc-100 md:border-t-0">
+            <button 
+              onClick={() => setShowSetup(!showSetup)} 
+              className="text-[9px] font-black text-zinc-400 hover:text-emerald-600 transition-colors uppercase tracking-widest shrink-0"
+            >
               {showSetup ? "Close Setup" : "Setup Info"}
             </button>
-            <button onClick={generateMeal} disabled={isGenerating || ollamaStatus !== "connected" || selectedIngredients.length === 0} className="bg-zinc-900 text-white px-8 py-3 rounded-xl text-xs font-black uppercase tracking-[0.1em] hover:bg-emerald-600 disabled:opacity-20 transition-all active:scale-95 shadow-lg shadow-zinc-200">
-              {isGenerating ? "CRAFTING..." : "DRAFT GOURMET MENU"}
+            <button 
+              onClick={generateMeal} 
+              disabled={isGenerating || ollamaStatus !== "connected" || selectedIngredients.length === 0} 
+              className="bg-zinc-900 text-white px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.1em] hover:bg-emerald-600 disabled:opacity-20 transition-all active:scale-95 shadow-lg shadow-zinc-200 shrink-0"
+            >
+              {isGenerating ? "CRAFTING..." : "DRAFT MENU"}
             </button>
           </div>
         </div>
 
+        {/* 2. SETUP INSTRUCTIONS */}
         {showSetup && (
           <div className="rounded-3xl border border-emerald-100 bg-emerald-50/30 p-8 text-sm text-zinc-600 animate-in fade-in slide-in-from-top-4 duration-500">
             <div className="flex justify-between items-start mb-6">
               <div>
                 <h4 className="font-black text-zinc-900 uppercase tracking-widest text-xs mb-1">Local AI Configuration</h4>
-                <p className="text-[11px] text-emerald-600 font-bold uppercase tracking-tighter">Optimized for Gemma 4</p>
+                <p className="text-[11px] text-emerald-600 font-bold uppercase tracking-tighter">Optimized for Gemma 4 / Qwen Architecture</p>
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -313,21 +346,24 @@ export function AiRecipePanel({ supabaseUrl, supabaseAnonKey }: { supabaseUrl: s
               </div>
               <div className="space-y-4">
                 <h5 className="font-black text-zinc-800 text-[10px] uppercase tracking-widest">2. Model Deployment</h5>
-                <code className="block bg-zinc-900 text-emerald-400 p-4 rounded-xl font-mono text-xs shadow-lg">ollama run hf.co/unsloth/gemma-4-E4B-it-GGUF:IQ4_XS</code>
+                <code className="block bg-zinc-900 text-emerald-400 p-4 rounded-xl font-mono text-xs shadow-lg">ollama run qwen3.5:3b</code>
               </div>
             </div>
           </div>
         )}
 
+        {/* 3. ERRORS */}
         {error && <p className="text-center text-red-500 text-xs font-bold bg-red-50 py-3 rounded-xl border border-red-100">{error}</p>}
 
         <div className="min-h-[500px]">
+          {/* 4. LOADING SKELETONS */}
           {isGenerating && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in duration-500">
               {[1, 2, 3].map(i => <div key={i} className="h-64 bg-white border border-zinc-100 rounded-3xl animate-pulse shadow-sm" />)}
             </div>
           )}
 
+          {/* 5. GALLERY VIEW */}
           {!isGenerating && !selectedRecipe && recipes.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
               {recipes.map((r, i) => (
@@ -335,7 +371,7 @@ export function AiRecipePanel({ supabaseUrl, supabaseAnonKey }: { supabaseUrl: s
                   key={i} 
                   onClick={() => {
                     setSelectedRecipe(r);
-                    setIsPantryVisible(false);
+                    setIsPantryVisible(false); // AUTO-HIDE LOGIC
                   }} 
                   className="group cursor-pointer rounded-3xl border border-zinc-200 bg-white p-7 hover:border-emerald-500 hover:shadow-2xl hover:shadow-emerald-100/50 transition-all h-full flex flex-col justify-between border-t-4 border-t-transparent hover:border-t-emerald-500"
                 >
@@ -352,12 +388,13 @@ export function AiRecipePanel({ supabaseUrl, supabaseAnonKey }: { supabaseUrl: s
             </div>
           )}
 
+          {/* 6. DETAIL VIEW WITH AMBER ALERT SYSTEM */}
           {selectedRecipe && !isGenerating && (
             <div className="rounded-3xl border border-zinc-200 bg-white p-6 md:p-12 shadow-2xl shadow-zinc-200/50 animate-in zoom-in-95 duration-300 border-t-[12px] border-t-emerald-500">
               <button 
                 onClick={() => {
                   setSelectedRecipe(null);
-                  setIsPantryVisible(true);
+                  setIsPantryVisible(true); // AUTO-SHOW LOGIC
                 }} 
                 className="group mb-8 flex items-center gap-2 text-[10px] font-black tracking-[0.2em] text-zinc-400 hover:text-emerald-600 transition-colors uppercase"
               >
@@ -373,43 +410,51 @@ export function AiRecipePanel({ supabaseUrl, supabaseAnonKey }: { supabaseUrl: s
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-                <div className="lg:col-span-4 space-y-8">
-  <div>
-    <h5 className="font-black uppercase text-emerald-600 text-[10px] tracking-[0.3em] mb-6 flex items-center gap-2">
-      <span className="h-px w-4 bg-emerald-500" /> Active Pantry
-    </h5>
-    <div className="flex flex-wrap gap-2">
-      {/* 1. SAFE MAP: The ingredients you actually have */}
-      {(Array.isArray(selectedRecipe.pantryIngredients) ? selectedRecipe.pantryIngredients : []).filter(i => typeof i === 'string' && i.trim()).map((item, idx) => (
-        <div key={`pantry-${idx}`} className="rounded-xl border border-zinc-100 bg-zinc-50/50 px-4 py-2.5 hover:bg-white hover:border-emerald-200 transition-all hover:shadow-sm">
-          <p className="text-[12px] font-bold text-zinc-700 leading-tight">
-            {item.replace(/^[*-]\s*/, '').trim()}
-          </p>
-        </div>
-      ))}
-    </div>
+                {/* MISE EN PLACE */}
+                <div className="lg:col-span-4">
+                  <div className="bg-zinc-50/50 rounded-2xl border border-zinc-100 p-6">
+                    <h5 className="font-black uppercase text-emerald-600 text-[10px] tracking-[0.3em] mb-6 flex items-center gap-2">
+                      <span className="h-px w-4 bg-emerald-500" /> Active Pantry
+                    </h5>
+                    
+                    {/* FIXED: Added a set height and vertical scrolling */}
+                    <div className="max-h-[500px] overflow-y-auto pr-4 scrollbar-thin scrollbar-thumb-zinc-200 scrollbar-track-transparent flex flex-col gap-8">
+                      
+                      <div className="flex flex-wrap gap-2">
+                        {/* SAFE MAP: The ingredients you actually have */}
+                        {(Array.isArray(selectedRecipe.pantryIngredients) ? selectedRecipe.pantryIngredients : []).filter(i => typeof i === 'string' && i.trim()).map((item, idx) => (
+                          <div key={`pantry-${idx}`} className="rounded-xl border border-zinc-200 bg-white px-4 py-2.5 shadow-sm hover:border-emerald-300 transition-all">
+                            <p className="text-[12px] font-bold text-zinc-700 leading-tight">
+                              {item.replace(/^[*-]\s*/, '').trim()}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
 
-    {/* 2. CONDITIONAL RENDER: The "Hallucinated" or required extra ingredients */}
-    {Array.isArray(selectedRecipe.additionalIngredients) && selectedRecipe.additionalIngredients.length > 0 && (
-      <div className="mt-8 pt-8 border-t border-zinc-100 animate-in fade-in duration-500">
-        <h5 className="font-black uppercase text-amber-500 text-[10px] tracking-[0.3em] mb-6 flex items-center gap-2">
-          <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" /> 
-          Additional Items Needed
-        </h5>
-        <div className="flex flex-wrap gap-2">
-          {selectedRecipe.additionalIngredients.filter(i => typeof i === 'string' && i.trim()).map((item, idx) => (
-            <div key={`extra-${idx}`} className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 shadow-sm">
-              <p className="text-[12px] font-bold text-amber-700 leading-tight">
-                {item.replace(/^[*-]\s*/, '').trim()}
-              </p>
-            </div>
-          ))}
-        </div>
-      </div>
-    )}
-  </div>
-</div>
+                      {/* CONDITIONAL RENDER: The "Hallucinated" or required extra ingredients */}
+                      {Array.isArray(selectedRecipe.additionalIngredients) && selectedRecipe.additionalIngredients.length > 0 && (
+                        <div className="pt-6 border-t border-zinc-200 animate-in fade-in duration-500">
+                          <h5 className="font-black uppercase text-amber-500 text-[10px] tracking-[0.3em] mb-4 flex items-center gap-2">
+                            <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" /> 
+                            Additional Items Needed
+                          </h5>
+                          <div className="flex flex-wrap gap-2">
+                            {selectedRecipe.additionalIngredients.filter(i => typeof i === 'string' && i.trim()).map((item, idx) => (
+                              <div key={`extra-${idx}`} className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 shadow-sm">
+                                <p className="text-[12px] font-bold text-amber-700 leading-tight">
+                                  {item.replace(/^[*-]\s*/, '').trim()}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
 
+                  </div>
+                </div>
+
+                {/* EXECUTION */}
                 <div className="lg:col-span-8 space-y-8">
                   <h5 className="font-black uppercase text-emerald-600 text-[10px] tracking-[0.3em] flex items-center gap-2">
                     <span className="h-px w-4 bg-emerald-500" /> Execution
@@ -429,6 +474,7 @@ export function AiRecipePanel({ supabaseUrl, supabaseAnonKey }: { supabaseUrl: s
             </div>
           )}
 
+          {/* 7. EMPTY STATE */}
           {!isGenerating && !selectedRecipe && recipes.length === 0 && (
             <div className="text-center py-32 border-2 border-dashed border-zinc-200 rounded-3xl bg-white shadow-sm">
               <p className="text-zinc-400 font-black uppercase tracking-[0.3em] text-[10px]">Awaiting Culinary Input</p>
