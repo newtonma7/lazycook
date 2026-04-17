@@ -301,13 +301,12 @@ export function AiRecipePanel({ supabaseUrl, supabaseAnonKey }: { supabaseUrl: s
 const avoidanceContext = isAppending && recipes.length > 0 
       ? `\n[STRICT DUPLICATE PREVENTION] Do NOT repeat: ${recipes.map(r => r.title).join(", ")}.` : "";
 
-    // 1. Exponential Flexibility Scaling (Now forces PROTEINS and MAJOR additions on high levels)
     const flexibilityInstructions = [
       "Level 1 (Spartan): STRICTLY limit to the pantry list + Water/Salt/Pepper/Oil/Butter. NO EXCEPTIONS.",
       "Level 2 (Modest): Pantry + staples + EXACTLY ONE fresh aromatic or acid to wake up the dish.",
       "Level 3 (Home Cook): Pantry + staples + specific dry spices, fresh herbs, and liquid condiments to make a well-rounded meal.",
-      "Level 4 (Chef de Partie): Unrestricted access to standard groceries. You MUST add complementary proteins (meats, seafood, or plant-based), cheeses, or extra vegetables, plus sauces, to complete a rich, restaurant-quality dish.",
-      "Level 5 (Executive Chef): THE BLANK CHECK. Absolute freedom. Transform the pantry items into a massive gourmet entree by adding premium proteins (e.g., pancetta, short rib, scallops), artisanal cheeses, rich mother sauces, and complex pairings. Do not just season the pantry items—build a complete, luxurious meal around them."
+      "Level 4 (Chef de Partie): Unrestricted access to standard groceries. You MUST add complementary proteins (meat, seafood, OR plant-based like tofu/beans), cheeses/creams, or extra vegetables, plus sauces, to complete a rich, restaurant-quality dish.",
+      "Level 5 (Executive Chef): THE BLANK CHECK. Absolute freedom. Transform the pantry items into a massive gourmet entree by adding premium proteins (e.g., short rib, scallops, OR high-end mushrooms, tempeh, silken tofu), rich mother sauces, and complex pairings. Build a complete, luxurious meal."
     ][flexibility - 1];
 
     const creativenessInstructions = [
@@ -318,32 +317,24 @@ const avoidanceContext = isAppending && recipes.length > 0
       "Level 5: Experimental Avant-Garde. Highly unconventional, 'Chef-Lab' concepts."
     ][creativeness - 1];
 
-    // NEW: The "Elevated Classics" Bridge to fix the constraint conflict
     const familiarGourmetBridge = (flexibility >= 4 && creativeness <= 2)
-      ? "ELEVATED CLASSICS MANDATE: You are on Gourmet flexibility but Familiar creativity. You MUST create distinct, well-known classic flavor profiles (e.g., a rich Marinara, a perfect Aglio e Olio, a classic Alfredo). Do NOT invent weird fusions. Achieve 'Gourmet' status by using high-end traditional ingredients and premium techniques (confit, slow-roasting, emulsions)." 
+      ? "ELEVATED CLASSICS MANDATE: You are on Gourmet flexibility but Familiar creativity. You MUST create distinct, well-known classic flavor profiles. Achieve 'Gourmet' status by using high-end traditional ingredients and premium techniques (confit, slow-roasting, emulsions)." 
       : "";
 
     const chefDirection = customInstructions.trim() 
-      ? `\n[MANDATORY THEMATIC OVERRIDE] Execute this vibe: "${customInstructions}". Naturally integrate required ingredients into "additionalIngredients" ONLY IF Flexibility is Level 2 or higher.` : "";
+      ? `\n[MANDATORY THEMATIC & DIETARY OVERRIDE] Execute this exact vibe: "${customInstructions}". DIETARY STRICTNESS: If a specific diet (vegetarian, vegan, keto, pescatarian, etc.) is mentioned or implied here, you MUST obey it flawlessly. Using meat/poultry/animal-broth in a vegetarian dish is a CRITICAL FAILURE. Reach for tofu, tempeh, mushrooms, beans, and vegetable broths instead.` 
+      : "";
 
-    // 2. Dynamic Quality Rule (Now explicitly demands structural additions like meat)
+    const targetCount = flexibility >= 4 ? "EXACTLY 3" : "1-3";
+
     const qualityRule = flexibility <= 2
       ? "ADHERENCE OVER TASTE: Honor the strict ingredient limits even if the dish is highly simplistic."
-      : "STRUCTURAL & FLAVOR OVERLOAD: Salt and pepper are NOT enough. You are COMMANDED to add substantial structural ingredients (meats, proteins, heavy dairy, secondary vegetables) AND complex flavor layers (spices, wine, broths) to build a complete, fulfilling masterpiece. If the pantry is only carbs and veg, YOU MUST ADD A PROTEIN OR RICH FAT BASE.";
-
-    // 1. Force a strict integer, no ranges.
+      : "STRUCTURAL & FLAVOR OVERLOAD: Salt and pepper are NOT enough. You are COMMANDED to add substantial structural ingredients (proteins, rich fats, secondary vegetables) AND complex flavor layers (spices, wine, broths). If the pantry is only carbs and veg, YOU MUST ADD A MATCHING PROTEIN (Meat or Plant-based).";
     const numRecipes = flexibility >= 4 ? 3 : 2;
 
-    // 2. Dynamically build the JSON schema to physically hold the exact number of objects.
-    const schemaObjects = Array.from({ length: numRecipes }).map((_, i) => `{ 
-          "id": ${i + 1}, 
-          "title": "Distinct Recipe Name", 
-          "description": "3-sentence flavor deep-dive", 
-          "prepTime": "XX mins", 
-          "pantryIngredients": ["Qty + Item"], 
-          "additionalIngredients": ["Qty + Item"], 
-          "instructions": ["Clean step text without numbers"] 
-        }`).join(",\n        ");
+    const schemaObjects = Array.from({ length: numRecipes })
+      .map((_, i) => `{ "id": ${i + 1}, "title": "Distinct Recipe Name", "description": "3-sentence flavor deep-dive", "prepTime": "XX mins", "pantryIngredients": ["Qty + Item"], "additionalIngredients": ["Qty + Item"], "instructions": ["Clean step text without numbers"] }`)
+      .join(", ");
 
     const spiceLexicon = flexibility >= 3 
       ? `\n[ADAPTIVE FLAVOR MANDATE] 
@@ -367,8 +358,10 @@ const avoidanceContext = isAppending && recipes.length > 0
       - Every item MUST have specific counts/volumes (e.g. '3 Carrots', '2 tbsp'). Mathematically scale for ${quantityLabels[quantity]}.
       - SEPARATE INGREDIENTS: NEVER group ingredients. Write '1 tsp Salt' and '1 tsp Black Pepper' as two completely separate array items. Combining items like "Salt and Pepper" into one string is strictly forbidden.
       
-      [INGREDIENT RULES: SORTING VS. LIMITING]
-      - SORTING: perfectly sort ingredients. 'pantryIngredients' gets ONLY items explicitly found in this list: ${selectedIngredients.join(", ")}. 'additionalIngredients' gets EVERYTHING else (including staples).
+      [INGREDIENT RULES: SORTING VS. LIMITING & DERIVATIVES]
+      - SORTING: 'pantryIngredients' gets the items explicitly found in this list: ${selectedIngredients.join(", ")}. 
+      - THE DERIVATIVE RULE: If you use a processed form or specific part of a pantry item (e.g., 'Broccoli florets' or 'Chopped Broccoli' instead of just 'Broccoli'), it STILL belongs in 'pantryIngredients'. Do NOT put derivative forms in 'additionalIngredients'.
+      - 'additionalIngredients' gets EVERYTHING else (including staples).
       - LIMITING: Your limit is dictated ONLY by the Flexibility Rule. 
       - NEGATIVE LIST: NEVER use: ${excludedIngredients.join(", ") || "None"}.
       - FLEXIBILITY RULE: ${flexibilityInstructions}
@@ -379,6 +372,10 @@ const avoidanceContext = isAppending && recipes.length > 0
       [EXECUTION]
       - 8-12 micro-steps focusing on TECHNIQUE.
       - STRICT FORMATTING: DO NOT NUMBER THE STEPS. Do not write '1.', '2.', etc. Return clean text only.
+
+      [THE ESCAPE HATCH (IMPOSSIBLE CONSTRAINTS)]
+      - If the user's constraints (e.g., Level 1 Flexibility combined with an impossible Dietary Override or incompatible ingredients) make it LITERALLY IMPOSSIBLE to create an edible dish, DO NOT CRASH OR RETURN EMPTY.
+      - Instead, fulfill the JSON schema by returning the requested number of objects, but make the "title" say "Culinary Gridlock", and use the "description" to explain to the user exactly why these ingredients and rules cannot work together. Fill the instructions with "Please adjust the flexibility slider or change your Chef's Direction."
       
       [SCHEMA (STRICT JSON)] 
       Return a raw JSON array containing EXACTLY ${numRecipes} objects. You MUST follow this exact structure:
@@ -395,7 +392,12 @@ const avoidanceContext = isAppending && recipes.length > 0
           prompt: prompt, 
           stream: false, 
           format: "json",
-          options: { num_predict: 8192, temperature: 0.8, top_p: 0.9 }
+          options: { 
+            num_predict: 8192, 
+            temperature: 0.8, 
+            top_p: 0.9,
+            repeat_penalty: 1.1
+          }
         }),
       });
 
