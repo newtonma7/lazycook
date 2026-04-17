@@ -13,7 +13,9 @@ export type PantryRow = {
     pantry_id: number;
     consumer_id: number | null;
     pantry_name: string;
-};
+}; 
+
+
 
 export type PantryItemRow = {
     pantry_item_id: number;

@@ -23,7 +23,7 @@ import { redirect, unstable_rethrow } from "next/navigation";
 
 function buildAccountRedirect(params: Record<string, string>) {
   const search = new URLSearchParams({ tab: "account", ...params });
-  return `/?${search.toString()}`;
+  return `/dashboard?${search.toString()}`;
 }
 
 function parseRole(raw: FormDataEntryValue | null): AccountRole | null {
@@ -91,7 +91,7 @@ export async function signUpAccount(formData: FormData) {
     }
 
     await setAccountSession({ role, userId, email });
-    revalidatePath("/");
+    revalidatePath("/dashboard");
     redirect(buildAccountRedirect({ message: `${getRoleConfig(role).label} account created.` }));
   } catch (error) {
     unstable_rethrow(error);
@@ -129,7 +129,7 @@ export async function signInAccount(formData: FormData) {
     const sessionEmail = typeof row.email === "string" ? row.email : "";
 
     await setAccountSession({ role, userId, email: sessionEmail });
-    revalidatePath("/");
+    revalidatePath("/dashboard");
     redirect(buildAccountRedirect({ message: `Signed in as ${getRoleConfig(role).label.toLowerCase()}.` }));
   } catch (error) {
     unstable_rethrow(error);
@@ -186,7 +186,7 @@ export async function updateCurrentAccount(formData: FormData) {
     }
 
     await setAccountSession({ ...session, email: nextEmail });
-    revalidatePath("/");
+    revalidatePath("/dashboard");
     redirect(buildAccountRedirect({ message: "Account details updated." }));
   } catch (error) {
     unstable_rethrow(error);
@@ -207,7 +207,7 @@ export async function deleteCurrentAccount() {
     }
 
     await clearAccountSession();
-    revalidatePath("/");
+    revalidatePath("/dashboard");
     redirect(buildAccountRedirect({ message: "Account deleted." }));
   } catch (error) {
     unstable_rethrow(error);
@@ -247,7 +247,7 @@ export async function addConsumer(formData: FormData) {
     return;
   }
 
-  redirect("/?tab=consumer");
+  redirect("/dashboard?tab=consumer");
 }
 
 export async function deleteConsumer(formData: FormData) {
@@ -266,7 +266,7 @@ export async function deleteConsumer(formData: FormData) {
     return;
   }
 
-  redirect("/?tab=consumer");
+  redirect("/dashboard?tab=consumer");
 }
 
 export async function updateConsumer(formData: FormData) {
@@ -298,7 +298,7 @@ export async function updateConsumer(formData: FormData) {
     return;
   }
 
-  redirect("/?tab=consumer");
+  redirect("/dashboard?tab=consumer");
 }
 
 function parseAllergen(raw: FormDataEntryValue | null): boolean {
@@ -360,7 +360,7 @@ export async function addIngredient(formData: FormData) {
     return;
   }
 
-  redirect("/?tab=ingredient");
+  redirect("/dashboard?tab=ingredient");
 }
 
 export async function updateIngredient(formData: FormData) {
@@ -392,7 +392,7 @@ export async function updateIngredient(formData: FormData) {
     return;
   }
 
-  redirect("/?tab=ingredient");
+  redirect("/dashboard?tab=ingredient");
 }
 
 export async function deleteIngredient(formData: FormData) {
@@ -411,7 +411,7 @@ export async function deleteIngredient(formData: FormData) {
     return;
   }
 
-  redirect("/?tab=ingredient");
+  redirect("/dashboard?tab=ingredient");
 }
 
 export async function addRecipe(formData: FormData) {
@@ -453,7 +453,7 @@ export async function addRecipe(formData: FormData) {
     return;
   }
 
-  redirect("/?tab=recipe");
+  redirect("/dashboard?tab=recipe");
 }
 
 export async function updateRecipe(formData: FormData) {
@@ -495,7 +495,7 @@ export async function updateRecipe(formData: FormData) {
     return;
   }
 
-  redirect("/?tab=recipe");
+  redirect("/dashboard?tab=recipe");
 }
 
 export async function deleteRecipe(formData: FormData) {
@@ -521,7 +521,7 @@ export async function deleteRecipe(formData: FormData) {
     return;
   }
 
-  redirect("/?tab=recipe");
+  redirect("/dashboard?tab=recipe");
 }
 
 export async function addRecipeIngredient(formData: FormData) {
@@ -554,7 +554,7 @@ export async function addRecipeIngredient(formData: FormData) {
     return;
   }
 
-  redirect("/?tab=recipe");
+  redirect("/dashboard?tab=recipe");
 }
 
 export async function updateRecipeIngredient(formData: FormData) {
@@ -589,7 +589,7 @@ export async function updateRecipeIngredient(formData: FormData) {
     return;
   }
 
-  redirect("/?tab=recipe");
+  redirect("/dashboard?tab=recipe");
 }
 
 export async function deleteRecipeIngredient(formData: FormData) {
@@ -612,7 +612,7 @@ export async function deleteRecipeIngredient(formData: FormData) {
     return;
   }
 
-  redirect("/?tab=recipe");
+  redirect("/dashboard?tab=recipe");
 }
 
 /* ───────── Pantry CRUD ───────── */
@@ -635,7 +635,7 @@ export async function addPantry(formData: FormData) {
     return;
   }
 
-  redirect("/?tab=pantry");
+  redirect("/dashboard?tab=pantry");
 }
 
 export async function updatePantry(formData: FormData) {
@@ -658,7 +658,7 @@ export async function updatePantry(formData: FormData) {
     return;
   }
 
-  redirect("/?tab=pantry");
+  redirect("/dashboard?tab=pantry");
 }
 
 export async function deletePantry(formData: FormData) {
@@ -682,7 +682,7 @@ export async function deletePantry(formData: FormData) {
     return;
   }
 
-  redirect("/?tab=pantry");
+  redirect("/dashboard?tab=pantry");
 }
 
 /* ───────── Pantry Item CRUD ───────── */
@@ -710,7 +710,7 @@ export async function addPantryItem(formData: FormData) {
     return;
   }
 
-  redirect("/?tab=pantry");
+  redirect("/dashboard?tab=pantry");
 }
 
 export async function updatePantryItem(formData: FormData) {
@@ -737,7 +737,7 @@ export async function updatePantryItem(formData: FormData) {
     return;
   }
 
-  redirect("/?tab=pantry");
+  redirect("/dashboard?tab=pantry");
 }
 
 export async function deletePantryItem(formData: FormData) {
@@ -755,7 +755,7 @@ export async function deletePantryItem(formData: FormData) {
     return;
   }
 
-  redirect("/?tab=pantry");
+  redirect("/dashboard?tab=pantry");
 }
 
 /* ───────── Meal Plan CRUD ───────── */
@@ -780,7 +780,7 @@ export async function addMealPlan(formData: FormData) {
     return;
   }
 
-  redirect("/?tab=meal_plan");
+  redirect("/dashboard?tab=meal_plan");
 }
 
 export async function updateMealPlan(formData: FormData) {
@@ -805,7 +805,7 @@ export async function updateMealPlan(formData: FormData) {
     return;
   }
 
-  redirect("/?tab=meal_plan");
+  redirect("/dashboard?tab=meal_plan");
 }
 
 export async function deleteMealPlan(formData: FormData) {
@@ -829,7 +829,7 @@ export async function deleteMealPlan(formData: FormData) {
     return;
   }
 
-  redirect("/?tab=meal_plan");
+  redirect("/dashboard?tab=meal_plan");
 }
 
 /* ───────── Meal Plan Item CRUD ───────── */
@@ -856,7 +856,7 @@ export async function addMealPlanItem(formData: FormData) {
     return;
   }
 
-  redirect("/?tab=meal_plan");
+  redirect("/dashboard?tab=meal_plan");
 }
 
 export async function updateMealPlanItem(formData: FormData) {
@@ -882,7 +882,7 @@ export async function updateMealPlanItem(formData: FormData) {
     return;
   }
 
-  redirect("/?tab=meal_plan");
+  redirect("/dashboard?tab=meal_plan");
 }
 
 export async function deleteMealPlanItem(formData: FormData) {
@@ -900,5 +900,5 @@ export async function deleteMealPlanItem(formData: FormData) {
     return;
   }
 
-  redirect("/?tab=meal_plan");
+  redirect("/dashboard?tab=meal_plan");
 }
