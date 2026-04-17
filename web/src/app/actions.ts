@@ -3,20 +3,14 @@
 import { createClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
 import {
-  buildInsertPayload,
   clearAccountSession,
-  createSupabaseBrowserKeyClient,
-  findAccountByEmail,
-  findAccountByUsername,
-  getRoleConfig,
+  createSupabaseServerAuthClient,
   getSupabaseEnv,
-  hashPassword,
   normalizeEmail,
   normalizePassword,
   normalizeUsername,
   readAccountSession,
   setAccountSession,
-  verifyPassword,
   type AccountRole,
 } from "./account-auth";
 import { redirect, unstable_rethrow } from "next/navigation";
@@ -55,44 +49,32 @@ export async function signUpAccount(formData: FormData) {
   }
 
   try {
-    const [existingEmailAccount, existingUsernameAccount] = await Promise.all([
-      findAccountByEmail(role, email),
-      findAccountByUsername(role, username),
-    ]);
+    const supabase = createSupabaseServerAuthClient();
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          username,
+          role,
+        },
+      },
+    });
 
-    if (existingEmailAccount) {
-      redirect(buildAccountRedirect({ error: `${getRoleConfig(role).label} account already exists for that email.` }));
-    }
-
-    if (existingUsernameAccount) {
-      redirect(buildAccountRedirect({ error: `${getRoleConfig(role).label} username is already taken.` }));
-    }
-
-    const supabase = createSupabaseBrowserKeyClient();
-    const passwordHash = hashPassword(password);
-    const insertPayload = await buildInsertPayload(role, username, email, passwordHash);
-    const config = getRoleConfig(role);
-
-    const { data, error } = await supabase
-      .from(config.table)
-      .insert([insertPayload])
-      .select(`email, username, ${config.idColumn}`)
-      .single();
-
-    if (error || !data) {
+    if (error) {
       throw new Error(error?.message ?? "Unable to create account.");
     }
-
-    const insertedRow = data as Record<string, unknown>;
-    const userId = insertedRow[config.idColumn];
-
-    if (typeof userId !== "number") {
-      throw new Error("Account was created, but the returned id was invalid.");
+    if (data.session) {
+      await setAccountSession({
+        accessToken: data.session.access_token,
+        refreshToken: data.session.refresh_token,
+      });
     }
-
-    await setAccountSession({ role, userId, email });
     revalidatePath("/dashboard");
-    redirect(buildAccountRedirect({ message: `${getRoleConfig(role).label} account created.` }));
+    if (data.session) {
+      redirect(buildAccountRedirect({ message: "Account created. You're signed in." }));
+    }
+    redirect(buildAccountRedirect({ message: "Account created. Check your email to confirm sign-in." }));
   } catch (error) {
     unstable_rethrow(error);
     redirect(buildAccountRedirect({ error: getAccountMessage(error) }));
@@ -100,37 +82,29 @@ export async function signUpAccount(formData: FormData) {
 }
 
 export async function signInAccount(formData: FormData) {
-  const role = parseRole(formData.get("role"));
-  const username = normalizeUsername(formData.get("username"));
+  const email = normalizeEmail(formData.get("email"));
   const password = normalizePassword(formData.get("password"));
 
-  if (!role || !username || !password) {
-    redirect(buildAccountRedirect({ error: "Enter your username, password, and account type." }));
+  if (!email || !password) {
+    redirect(buildAccountRedirect({ error: "Enter your email and password." }));
   }
 
   try {
-    const row = await findAccountByUsername(role, username);
+    const supabase = createSupabaseServerAuthClient();
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
-    if (!row || typeof row.password_hash !== "string") {
-      redirect(buildAccountRedirect({ error: "No matching account was found." }));
+    if (error || !data.session) {
+      redirect(buildAccountRedirect({ error: "Invalid email or password." }));
     }
-
-    if (!verifyPassword(password, row.password_hash)) {
-      redirect(buildAccountRedirect({ error: "Incorrect password." }));
-    }
-
-    const config = getRoleConfig(role);
-    const userId = row[config.idColumn];
-
-    if (typeof userId !== "number") {
-      throw new Error("The account record is missing its primary key.");
-    }
-
-    const sessionEmail = typeof row.email === "string" ? row.email : "";
-
-    await setAccountSession({ role, userId, email: sessionEmail });
+    await setAccountSession({
+      accessToken: data.session.access_token,
+      refreshToken: data.session.refresh_token,
+    });
     revalidatePath("/dashboard");
-    redirect(buildAccountRedirect({ message: `Signed in as ${getRoleConfig(role).label.toLowerCase()}.` }));
+    redirect(buildAccountRedirect({ message: "Signed in." }));
   } catch (error) {
     unstable_rethrow(error);
     redirect(buildAccountRedirect({ error: getAccountMessage(error) }));
@@ -148,27 +122,25 @@ export async function updateCurrentAccount(formData: FormData) {
   }
 
   try {
-    const supabase = createSupabaseBrowserKeyClient();
-    const config = getRoleConfig(session.role);
-    const [existingUsernameAccount, existingEmailAccount] = await Promise.all([
-      findAccountByUsername(session.role, nextUsername),
-      findAccountByEmail(session.role, nextEmail),
-    ]);
-
-    const usernameOwnerId = (existingUsernameAccount as Record<string, unknown> | null)?.[config.idColumn];
-    const emailOwnerId = (existingEmailAccount as Record<string, unknown> | null)?.[config.idColumn];
-
-    if (existingUsernameAccount && usernameOwnerId !== session.userId) {
-      redirect(buildAccountRedirect({ error: "That username is already taken." }));
+    const supabase = createSupabaseServerAuthClient();
+    const { error: setSessionError } = await supabase.auth.setSession({
+      access_token: session.accessToken,
+      refresh_token: session.refreshToken,
+    });
+    if (setSessionError) {
+      throw new Error(setSessionError.message);
     }
-
-    if (existingEmailAccount && emailOwnerId !== session.userId) {
-      redirect(buildAccountRedirect({ error: "That email is already in use." }));
-    }
-
-    const payload: Record<string, string> = {
-      username: nextUsername,
+    const payload: {
+      email: string;
+      password?: string;
+      data: {
+        username: string;
+      };
+    } = {
       email: nextEmail,
+      data: {
+        username: nextUsername,
+      },
     };
 
     if (nextPassword) {
@@ -176,18 +148,24 @@ export async function updateCurrentAccount(formData: FormData) {
         redirect(buildAccountRedirect({ error: "New passwords must be at least 8 characters long." }));
       }
 
-      payload.password_hash = hashPassword(nextPassword);
+      payload.password = nextPassword;
     }
 
-    const { error } = await supabase.from(config.table).update(payload).eq(config.idColumn, session.userId);
+    const { data, error } = await supabase.auth.updateUser(payload);
 
     if (error) {
       throw new Error(error.message);
     }
-
-    await setAccountSession({ ...session, email: nextEmail });
+    const nextSession = (await supabase.auth.getSession()).data.session;
+    if (nextSession) {
+      await setAccountSession({
+        accessToken: nextSession.access_token,
+        refreshToken: nextSession.refresh_token,
+      });
+    }
     revalidatePath("/dashboard");
-    redirect(buildAccountRedirect({ message: "Account details updated." }));
+    const requiresConfirmation = data.user?.new_email && data.user?.new_email !== data.user?.email;
+    redirect(buildAccountRedirect({ message: requiresConfirmation ? "Profile updated. Confirm your new email from your inbox." : "Account details updated." }));
   } catch (error) {
     unstable_rethrow(error);
     redirect(buildAccountRedirect({ error: getAccountMessage(error) }));
@@ -195,24 +173,7 @@ export async function updateCurrentAccount(formData: FormData) {
 }
 
 export async function deleteCurrentAccount() {
-  const session = await requireSession();
-
-  try {
-    const supabase = createSupabaseBrowserKeyClient();
-    const config = getRoleConfig(session.role);
-    const { error } = await supabase.from(config.table).delete().eq(config.idColumn, session.userId);
-
-    if (error) {
-      throw new Error(error.message);
-    }
-
-    await clearAccountSession();
-    revalidatePath("/dashboard");
-    redirect(buildAccountRedirect({ message: "Account deleted." }));
-  } catch (error) {
-    unstable_rethrow(error);
-    redirect(buildAccountRedirect({ error: getAccountMessage(error) }));
-  }
+  redirect(buildAccountRedirect({ error: "Account deletion requires an admin API path and is not enabled yet." }));
 }
 
 export async function signOutAccount() {

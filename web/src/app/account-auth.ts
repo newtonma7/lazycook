@@ -14,7 +14,7 @@ type AccountRow = Record<string, unknown>;
 
 export type CurrentAccount = {
     role: AccountRole;
-    userId: number;
+    userId: string;
     email: string;
     username: string | null;
     status: string | null;
@@ -22,9 +22,8 @@ export type CurrentAccount = {
 };
 
 type AccountSession = {
-    role: AccountRole;
-    userId: number;
-    email: string;
+    accessToken: string;
+    refreshToken: string;
 };
 
 const SESSION_COOKIE_NAME = "lazycook-account-session";
@@ -57,6 +56,22 @@ export function createSupabaseBrowserKeyClient() {
     }
 
     return createClient(supabaseUrl, supabaseAnonKey);
+}
+
+export function createSupabaseServerAuthClient() {
+    const { supabaseUrl, supabaseAnonKey } = getSupabaseEnv();
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+        throw new Error("Missing Supabase environment variables.");
+    }
+
+    return createClient(supabaseUrl, supabaseAnonKey, {
+        auth: {
+            autoRefreshToken: false,
+            persistSession: false,
+            detectSessionInUrl: false,
+        },
+    });
 }
 
 export function normalizeEmail(raw: FormDataEntryValue | null) {
@@ -160,45 +175,6 @@ export async function readAccountSession() {
     return decodeSession(token);
 }
 
-export async function findAccountByEmail(role: AccountRole, email: string) {
-    const supabase = createSupabaseBrowserKeyClient();
-    const config = getRoleConfig(role);
-
-    const { data, error } = await supabase.from(config.table).select("*").eq("email", email).maybeSingle();
-
-    if (error) {
-        throw new Error(error.message);
-    }
-
-    return (data as AccountRow | null) ?? null;
-}
-
-export async function findAccountByUsername(role: AccountRole, username: string) {
-    const supabase = createSupabaseBrowserKeyClient();
-    const config = getRoleConfig(role);
-
-    const { data, error } = await supabase.from(config.table).select("*").eq("username", username).maybeSingle();
-
-    if (error) {
-        throw new Error(error.message);
-    }
-
-    return (data as AccountRow | null) ?? null;
-}
-
-export async function findAccountById(role: AccountRole, userId: number) {
-    const supabase = createSupabaseBrowserKeyClient();
-    const config = getRoleConfig(role);
-
-    const { data, error } = await supabase.from(config.table).select("*").eq(config.idColumn, userId).maybeSingle();
-
-    if (error) {
-        throw new Error(error.message);
-    }
-
-    return (data as AccountRow | null) ?? null;
-}
-
 export async function buildInsertPayload(role: AccountRole, username: string, email: string, passwordHash: string) {
     const config = getRoleConfig(role);
     const [hasUsernameColumn, hasStatusColumn] = await Promise.all([
@@ -222,20 +198,21 @@ export async function buildInsertPayload(role: AccountRole, username: string, em
     return payload;
 }
 
-export function mapCurrentAccount(role: AccountRole, row: AccountRow) {
-    const config = getRoleConfig(role);
-    const rawId = row[config.idColumn];
-
-    if (typeof rawId !== "number") {
-        return null;
-    }
+export function mapCurrentAccount(row: AccountRow) {
+    const userId = typeof row.id === "string" ? row.id : "";
+    const email = typeof row.email === "string" ? row.email : "";
+    const metadata = typeof row.user_metadata === "object" && row.user_metadata !== null
+        ? (row.user_metadata as Record<string, unknown>)
+        : {};
+    const rawRole = metadata.role;
+    const role: AccountRole = rawRole === "admin" ? "admin" : "consumer";
 
     return {
         role,
-        userId: rawId,
-        email: typeof row.email === "string" ? row.email : "",
-        username: typeof row.username === "string" ? row.username : null,
-        status: typeof row.status === "string" ? row.status : null,
+        userId,
+        email,
+        username: typeof metadata.username === "string" ? metadata.username : null,
+        status: "active",
         createdAt: typeof row.created_at === "string" ? row.created_at : null,
     } satisfies CurrentAccount;
 }
@@ -246,15 +223,32 @@ export async function getCurrentAccount() {
     if (!session) {
         return null;
     }
+    const supabase = createSupabaseServerAuthClient();
+    const { error: setSessionError } = await supabase.auth.setSession({
+        access_token: session.accessToken,
+        refresh_token: session.refreshToken,
+    });
 
-    const row = await findAccountById(session.role, session.userId);
-
-    if (!row) {
+    if (setSessionError) {
         await clearAccountSession();
         return null;
     }
 
-    return mapCurrentAccount(session.role, row);
+    const { data, error } = await supabase.auth.getUser();
+    if (error || !data.user) {
+        await clearAccountSession();
+        return null;
+    }
+
+    const nextSession = data.user ? (await supabase.auth.getSession()).data.session : null;
+    if (nextSession) {
+        await setAccountSession({
+            accessToken: nextSession.access_token,
+            refreshToken: nextSession.refresh_token,
+        });
+    }
+
+    return mapCurrentAccount(data.user as unknown as AccountRow);
 }
 
 export function getRoleLabel(role: AccountRole) {

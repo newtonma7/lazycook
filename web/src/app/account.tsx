@@ -64,7 +64,7 @@ export async function AccountPanel({ message, error }: Props) {
                                 <dd className="mt-2 text-sm text-zinc-900">{currentAccount.email}</dd>
                             </div>
                             <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-4">
-                                <dt className="text-xs font-medium uppercase tracking-wide text-zinc-500">Primary key</dt>
+                                <dt className="text-xs font-medium uppercase tracking-wide text-zinc-500">User ID</dt>
                                 <dd className="mt-2 text-sm text-zinc-900">{currentAccount.userId}</dd>
                             </div>
                             <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-4">
@@ -161,17 +161,17 @@ export async function AccountPanel({ message, error }: Props) {
                 <div className="grid gap-6 lg:grid-cols-2">
                     <section className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
                         <h3 className="text-lg font-semibold text-zinc-900">Sign in</h3>
-                        <p className="mt-2 text-sm text-zinc-600">Choose whether you are signing in as a consumer or an admin.</p>
+                        <p className="mt-2 text-sm text-zinc-600">Sign in with your Supabase auth email and password.</p>
 
                         <form action={signInAccount} className="mt-5 space-y-4">
                             <div className="flex flex-col gap-1">
-                                <label htmlFor="signin-username" className="text-sm text-zinc-600">
-                                    Username
+                                <label htmlFor="signin-email" className="text-sm text-zinc-600">
+                                    Email
                                 </label>
                                 <input
-                                    id="signin-username"
-                                    name="username"
-                                    type="text"
+                                    id="signin-email"
+                                    name="email"
+                                    type="email"
                                     required
                                     className="rounded border border-zinc-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
                                 />
@@ -189,8 +189,12 @@ export async function AccountPanel({ message, error }: Props) {
                                     className="rounded border border-zinc-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
                                 />
                             </div>
-
-                            <RoleButtons action="signin" />
+                            <button
+                                type="submit"
+                                className="rounded bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-1"
+                            >
+                                Sign in
+                            </button>
                         </form>
                     </section>
 
