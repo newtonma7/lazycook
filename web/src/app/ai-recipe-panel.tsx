@@ -218,7 +218,7 @@ const avoidanceContext = isAppending && recipes.length > 0
       - 'pantryIngredients': MUST ONLY contain items explicitly found in this list: ${selectedIngredients.join(", ")}. If it is not in this list, it is FORBIDDEN to put it here.
       - 'additionalIngredients': MUST contain everything else, including staples (Salt, Oil, etc.) and any "Gourmet" additions you suggested.
       - NEGATIVE LIST: NEVER use: ${excludedIngredients.join(", ") || "None"}.
-      - STAPLES: Water, Salt, Pepper, Oil, Butter are available. Provide quantities.
+      - STAPLES: Water, Salt, Pepper, Oil are available. Provide quantities.
       - MEASUREMENTS: Use counts and volumes only.
 
       [EXECUTION]
