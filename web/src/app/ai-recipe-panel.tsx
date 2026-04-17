@@ -167,65 +167,92 @@ export function AiRecipePanel({ supabaseUrl, supabaseAnonKey }: { supabaseUrl: s
       setIsPantryVisible(true);
       setCanLoadMore(true);
     }
-const avoidanceContext = isAppending && recipes.length > 0
-      ? `\n[STRICT DUPLICATE PREVENTION] Do NOT repeat or mimic: ${recipes.map((r) => r.title).join(", ")}.`
-      : "";
+const avoidanceContext = isAppending && recipes.length > 0 
+      ? `\n[STRICT DUPLICATE PREVENTION] Do NOT repeat: ${recipes.map(r => r.title).join(", ")}.` : "";
 
+    // 1. Exponential Flexibility Scaling (Now forces PROTEINS and MAJOR additions on high levels)
     const flexibilityInstructions = [
-      "Level 1 (Strict): Use ONLY provided items + staples. No other additions.",
-      "Level 2 (Balanced): Use provided items + staples + ONE aromatic.",
-      "Level 3 (Creative): Use provided items + staples + 3 extras.",
-      "Level 4 (Enthusiast): Prioritize pantry, but add 5+ items for professional results.",
-      "Level 5 (Gourmet): TOTAL CULINARY FREEDOM. Treat the pantry as a secondary suggestion. Use an unlimited spice and sauce cabinet. If the user provides 2 items, you provide the other 10 needed to make it a masterpiece."
+      "Level 1 (Spartan): STRICTLY limit to the pantry list + Water/Salt/Pepper/Oil/Butter. NO EXCEPTIONS.",
+      "Level 2 (Modest): Pantry + staples + EXACTLY ONE fresh aromatic or acid to wake up the dish.",
+      "Level 3 (Home Cook): Pantry + staples + specific dry spices, fresh herbs, and liquid condiments to make a well-rounded meal.",
+      "Level 4 (Chef de Partie): Unrestricted access to standard groceries. You MUST add complementary proteins (meats, seafood, or plant-based), cheeses, or extra vegetables, plus sauces, to complete a rich, restaurant-quality dish.",
+      "Level 5 (Executive Chef): THE BLANK CHECK. Absolute freedom. Transform the pantry items into a massive gourmet entree by adding premium proteins (e.g., pancetta, short rib, scallops), artisanal cheeses, rich mother sauces, and complex pairings. Do not just season the pantry items—build a complete, luxurious meal around them."
     ][flexibility - 1];
 
-    const targetCount = flexibility >= 4 ? "EXACTLY 3" : "1-3";
-
-    const chefDirection = customInstructions.trim() 
-      ? `\n[MANDATORY THEMATIC OVERRIDE] You MUST execute this vibe: "${customInstructions}". If this requires specific spices, herbs, or sauces NOT in the pantry, you are COMMANDED to add them to the "additionalIngredients" list.` 
-      : "";
-    
     const creativenessInstructions = [
-      "Level 1: Strictly Traditional. Focus on time-tested, classic flavor pairings and recognizable comfort food structures. No 'surprises'.",
-      "Level 2: Familiar. Standard home-cooking pairings that are safe and reliable.",
-      "Level 3: Modern. Contemporary restaurant-style pairings that are current but not shocking.",
-      "Level 4: Fusion. Bold, creative combinations that bridge different cuisines and push flavor boundaries.",
-      "Level 5: Avant-Garde. Be highly experimental. Use unexpected flavor contrasts, unique ingredient applications, and 'Chef-Lab' concepts."
+      "Level 1: Strictly Traditional. Stick to classic, culturally authentic flavor profiles.", 
+      "Level 2: Familiar. Standard, well-loved home-cooking pairings and sauces.", 
+      "Level 3: Modern. Contemporary restaurant-style pairings.", 
+      "Level 4: Bold Fusion. Creative combinations bridging different cuisines.", 
+      "Level 5: Experimental Avant-Garde. Highly unconventional, 'Chef-Lab' concepts."
     ][creativeness - 1];
 
+    // NEW: The "Elevated Classics" Bridge to fix the constraint conflict
+    const familiarGourmetBridge = (flexibility >= 4 && creativeness <= 2)
+      ? "ELEVATED CLASSICS MANDATE: You are on Gourmet flexibility but Familiar creativity. You MUST create distinct, well-known classic flavor profiles (e.g., a rich Marinara, a perfect Aglio e Olio, a classic Alfredo). Do NOT invent weird fusions. Achieve 'Gourmet' status by using high-end traditional ingredients and premium techniques (confit, slow-roasting, emulsions)." 
+      : "";
+
+    const chefDirection = customInstructions.trim() 
+      ? `\n[MANDATORY THEMATIC OVERRIDE] Execute this vibe: "${customInstructions}". Naturally integrate required ingredients into "additionalIngredients" ONLY IF Flexibility is Level 2 or higher.` : "";
+
+    // 2. Dynamic Quality Rule (Now explicitly demands structural additions like meat)
+    const qualityRule = flexibility <= 2
+      ? "ADHERENCE OVER TASTE: Honor the strict ingredient limits even if the dish is highly simplistic."
+      : "STRUCTURAL & FLAVOR OVERLOAD: Salt and pepper are NOT enough. You are COMMANDED to add substantial structural ingredients (meats, proteins, heavy dairy, secondary vegetables) AND complex flavor layers (spices, wine, broths) to build a complete, fulfilling masterpiece. If the pantry is only carbs and veg, YOU MUST ADD A PROTEIN OR RICH FAT BASE.";
+
+    // 1. Force a strict integer, no ranges.
+    const numRecipes = flexibility >= 4 ? 3 : 2;
+
+    // 2. Dynamically build the JSON schema to physically hold the exact number of objects.
+    const schemaObjects = Array.from({ length: numRecipes }).map((_, i) => `{ 
+          "id": ${i + 1}, 
+          "title": "Distinct Recipe Name", 
+          "description": "3-sentence flavor deep-dive", 
+          "prepTime": "XX mins", 
+          "pantryIngredients": ["Qty + Item"], 
+          "additionalIngredients": ["Qty + Item"], 
+          "instructions": ["Clean step text without numbers"] 
+        }`).join(",\n        ");
+
+    const spiceLexicon = flexibility >= 3 
+      ? `\n[FLAVOR BOMB LEXICON] 
+      - BREAK THE DEFAULT BIAS: Stop defaulting to just "Salt" and "Black Pepper". 
+      - USE PUNCHY, REAL-WORLD SEASONINGS: Use highly flavorful, recognizable pantry blends and sauces. e.g., Sriracha, Cajun seasoning, Everything Bagel seasoning, Chili Crisp, Hot Honey, Gochujang, Smoked Paprika, Curry Powder, Taco Seasoning, Pesto, Harissa, Soy Sauce, or Buffalo sauce.
+      - NO PRETENTIOUS INGREDIENTS: Do not require hyper-rare or obscure fine-dining micro-ingredients. We want intense, fulfilling, and highly accessible flavor.`
+      : "";
+
     const prompt = `
-      [ROLE] Michelin-Star Executive Chef & Precision Culinary Architect.
+      [ROLE] Michelin-Star Chef & Precision Culinary Architect.
+      [GOAL] Craft EXACTLY ${numRecipes} completely distinct recipes using: ${selectedIngredients.join(", ")}.${avoidanceContext}${chefDirection}
       
-      [GOAL] Craft ${targetCount} high-concept recipes using: ${selectedIngredients.join(", ")}.${avoidanceContext}${chefDirection}
+      [CREATIVITY & VIBE] 
+      - BASE CREATIVITY: ${creativenessInstructions}
+      - ${familiarGourmetBridge}
+      - Make sure dishes are readable. Diners should easily get the gist of what the food is.
+      ${spiceLexicon}
       
-      [PRECISION MEASUREMENT MANDATE]
-      - ABSOLUTE CONSISTENCY: Every single item in both 'pantryIngredients' and 'additionalIngredients' MUST have a specific quantity. 
-      - NO NAKED INGREDIENTS: Never list an ingredient like 'Soy Sauce' or 'Garlic' alone. It must be '2 tbsp Soy Sauce' or '3 cloves Garlic'.
-      - SAUCE CONSISTENCY: Pay extra attention to liquid ratios. If making a sauce, ensure the volumes (tbsp, cups, tsp) are provided so the dish isn't too dry or too salty.
+      [PRECISION MEASUREMENTS & ATOMIZATION] 
+      - Every item MUST have specific counts/volumes (e.g. '3 Carrots', '2 tbsp'). Mathematically scale for ${quantityLabels[quantity]}.
+      - SEPARATE INGREDIENTS: NEVER group ingredients. Write '1 tsp Salt' and '1 tsp Black Pepper' as two completely separate array items. Combining items like "Salt and Pepper" into one string is strictly forbidden.
       
-      [CREATIVITY SPECTRUM]
-      - CURRENT LEVEL: ${creativenessInstructions}
-      - LOGIC: If Level 1-2, prioritize 'standard' ways to cook the ingredients. If Level 4-5, feel free to experiment more.
-
-      [CULINARY MANDATE]
-      - THE SEASONING RULE: A 'Gourmet' dish requires depth. Use dry rubs, marinades, herb pastes, and complex mother-sauces.
-      - FLAVOR AUTHENTICITY: If a specific cuisine is requested in the 'Thematic Override', you must include the foundational aromatics (e.g., Star Anise/Fish Sauce for Vietnamese, Cumin/Coriander for Indian) in the 'additionalIngredients' section with specific amounts.
-      - QUALITY OVER SIMPLICITY: I prefer a 10/10 masterwork over a 5/10 'easy' meal. 
-      - FLEXIBILITY: ${flexibilityInstructions}
-
-      [INGREDIENT CONSTRAINTS & CATEGORIZATION]
-      - THE BRICK WALL: You must be 100% accurate about what I have vs. what I need to get.
-      - 'pantryIngredients': MUST ONLY contain items explicitly found in this list: ${selectedIngredients.join(", ")}. If it is not in this list, it is FORBIDDEN to put it here.
-      - 'additionalIngredients': MUST contain everything else, including staples (Salt, Oil, etc.) and any "Gourmet" additions you suggested.
+      [INGREDIENT RULES: SORTING VS. LIMITING]
+      - SORTING: perfectly sort ingredients. 'pantryIngredients' gets ONLY items explicitly found in this list: ${selectedIngredients.join(", ")}. 'additionalIngredients' gets EVERYTHING else (including staples).
+      - LIMITING: Your limit is dictated ONLY by the Flexibility Rule. 
       - NEGATIVE LIST: NEVER use: ${excludedIngredients.join(", ") || "None"}.
-      - STAPLES: Water, Salt, Pepper, Oil are available. Provide quantities.
-      - MEASUREMENTS: Use counts and volumes only.
-
+      - FLEXIBILITY RULE: ${flexibilityInstructions}
+      
+      [CULINARY MANDATE]
+      - ${qualityRule}
+      
       [EXECUTION]
-      - 8-12 micro-steps focusing on TECHNIQUE (e.g., 'Bloom the spices in hot butter until fragrant', 'Deglaze the pan to incorporate the fond').
+      - 8-12 micro-steps focusing on TECHNIQUE.
+      - STRICT FORMATTING: DO NOT NUMBER THE STEPS. Do not write '1.', '2.', etc. Return clean text only.
       
       [SCHEMA (STRICT JSON)] 
-      [{ "id": 1, "title": "Name", "description": "Hook", "prepTime": "XX mins", "pantryIngredients": ["Quantity + Item"], "additionalIngredients": ["Quantity + Item"], "instructions": ["Step 1", "Step 2..."] }]
+      Return a raw JSON array containing EXACTLY ${numRecipes} objects. You MUST follow this exact structure:
+      [
+        ${schemaObjects}
+      ]
     `;
     try {
       const res = await fetch("http://127.0.0.1:11434/api/generate", {
@@ -242,8 +269,22 @@ const avoidanceContext = isAppending && recipes.length > 0
 
       const data = await res.json();
       const parsed = JSON.parse(data.response.trim().replace(/^```json/, "").replace(/```$/, ""));
-      let finalArray: Recipe[] = Array.isArray(parsed) ? parsed : 
-                       (Object.values(parsed).find((val: unknown) => Array.isArray(val)) as Recipe[] || [parsed]);
+      
+      let finalArray: Recipe[] = [];
+      
+      if (Array.isArray(parsed)) {
+        // AI correctly returned an array
+        finalArray = parsed;
+      } else if (parsed && typeof parsed === 'object' && parsed.title) {
+        // AI returned a single recipe object instead of an array
+        finalArray = [parsed];
+      } else if (parsed && typeof parsed === 'object') {
+        // AI returned a wrapped object like { "recipes": [...] }
+        const nestedArray = Object.values(parsed).find(val => Array.isArray(val));
+        finalArray = (nestedArray as Recipe[]) || [parsed];
+      }
+
+      // EXHAUSTION LOGIC...
 
       if (finalArray.length < 3) setCanLoadMore(false);
       if (isAppending) setRecipes((prev: Recipe[]) => [...prev, ...finalArray]);
