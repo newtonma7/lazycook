@@ -31,6 +31,7 @@ export function AiRecipePanel({ supabaseUrl, supabaseAnonKey }: { supabaseUrl: s
   const [isGenerating, setIsGenerating] = useState(false);
   const [isGeneratingMore, setIsGeneratingMore] = useState(false);
   const [canLoadMore, setCanLoadMore] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   
   // Flexibility Control (1 = Strict, 5 = Gourmet)
   const [flexibility, setFlexibility] = useState(2);
@@ -134,6 +135,136 @@ export function AiRecipePanel({ supabaseUrl, supabaseAnonKey }: { supabaseUrl: s
     fetchIngredientsForPantry();
   }, [supabase, selectedPantryId]);
 
+    // Helper to break "1 1/2 cups Chopped Onions" -> { qty: "1 1/2", unit: "cups", name: "Chopped Onions" }
+  const parseIngredientString = (rawString: string) => {
+    // Matches: [Quantity] [Unit] [Name] - Handles fractions and decimals
+    const match = rawString.trim().match(/^([\d\.\/]+(?:[\s-][\d\.\/]+)?)\s*([a-zA-Z]+)?\s+(.*)$/);
+    
+    if (match) {
+      let quantity = match[1].trim();
+      let unit = match[2] ? match[2].toLowerCase() : null;
+      let name = match[3].trim();
+      
+      // If the "unit" isn't a standard measurement, it's probably part of the name (e.g., "1 large Egg")
+      const commonUnits = ['g', 'kg', 'ml', 'l', 'oz', 'lb', 'tsp', 'tbsp', 'cup', 'cups', 'pinch', 'clove', 'cloves', 'slice', 'slices', 'sprig', 'sprigs', 'can'];
+      if (unit && !commonUnits.includes(unit)) {
+        name = `${unit} ${name}`;
+        unit = null;
+      }
+      return { quantity, unit, name };
+    }
+    
+    // Fallback if no numbers are at the start
+    return { quantity: null, unit: null, name: rawString };
+  };
+  const saveRecipeToDatabase = async (recipe: Recipe) => {
+    try {
+      setIsSaving(true);
+      setError("");
+
+      // 1. Format the data for the Recipe Table
+      const prepTimeMatch = recipe.prepTime.match(/\d+/);
+      const prepTimeMin = prepTimeMatch ? parseInt(prepTimeMatch[0], 10) : null;
+      
+      const formattedInstructions = recipe.instructions
+        .map((step, index) => `${index + 1}. ${step}`)
+        .join("\n\n");
+
+      // 2. INSERT RECIPE
+      const { data: newRecipe, error: recipeError } = await supabase
+        .from("recipe")
+        .insert({
+          consumer_id: 1, // UPDATE THIS WITH YOUR ACTUAL USER ID
+          admin_id: 1,    // UPDATE THIS WITH YOUR ACTUAL ADMIN ID
+          title: recipe.title,
+          description: recipe.description,
+          instructions: formattedInstructions,
+          prep_time_min: prepTimeMin,
+          cook_time_min: null,
+          servings: quantity,
+          is_public: false
+        })
+        .select("recipe_id")
+        .single();
+
+      if (recipeError) throw recipeError;
+      const createdRecipeId = newRecipe.recipe_id;
+
+      // 3. PREPARE INGREDIENTS
+      const allAiIngredients = [
+        ...(Array.isArray(recipe.pantryIngredients) ? recipe.pantryIngredients : []),
+        ...(Array.isArray(recipe.additionalIngredients) ? recipe.additionalIngredients : [])
+      ];
+
+      // Fetch all existing ingredients from your DB to match IDs
+      const { data: dbIngredients } = await supabase.from("ingredient").select("ingredient_id, name");
+      const existingIngredients = dbIngredients || [];
+
+      const recipeIngredientRows = [];
+
+      // 4. PROCESS EVERY INGREDIENT
+      for (const rawString of allAiIngredients) {
+        if (!rawString.trim()) continue;
+
+        // Rip the string into qty, unit, and name
+        const { quantity: parsedQty, unit: parsedUnit, name: parsedName } = parseIngredientString(rawString);
+        
+        // Fuzzy match: Does this ingredient already exist in your DB? (case-insensitive)
+        let matchedIngredient = existingIngredients.find(
+          dbIng => parsedName.toLowerCase().includes(dbIng.name.toLowerCase()) || 
+                   dbIng.name.toLowerCase().includes(parsedName.toLowerCase())
+        );
+
+        let ingredientId = matchedIngredient?.ingredient_id;
+
+        // 5. AUTO-CREATE MISSING INGREDIENTS (Optional but highly recommended)
+        // If the AI used a Gourmet ingredient you don't have in your DB yet, insert it to get an ID!
+        if (!ingredientId) {
+          const { data: newIng, error: ingError } = await supabase
+            .from("ingredient")
+            .insert({ name: parsedName })
+            .select("ingredient_id")
+            .single();
+            
+          if (!ingError && newIng) {
+            ingredientId = newIng.ingredient_id;
+            // Add to our local list so we don't insert duplicates in the same loop
+            existingIngredients.push({ ingredient_id: ingredientId, name: parsedName }); 
+          }
+        }
+
+        // 6. QUEUE THE ROW FOR DB INSERT
+        if (ingredientId) {
+          recipeIngredientRows.push({
+            recipe_id: createdRecipeId,
+            ingredient_id: ingredientId,
+            required_quantity: parsedQty,
+            unit: parsedUnit,
+            is_optional: false, // You could write logic to flag things as optional if desired
+            preparation_note: parsedName // Saving the AI's exact phrase (e.g. "Toasted Pine Nuts") as a prep note
+          });
+        }
+      }
+
+      // 7. BULK INSERT INTO recipe_ingredient
+      if (recipeIngredientRows.length > 0) {
+        const { error: relationError } = await supabase
+          .from("recipe_ingredient")
+          .insert(recipeIngredientRows);
+
+        if (relationError) throw relationError;
+      }
+
+      alert(`Success! "${recipe.title}" and its ingredients have been securely saved.`);
+
+    } catch (err: any) {
+      console.error("DB Save Error:", err);
+      setError(`Failed to save recipe: ${err.message}`);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const checkOllama = async () => {
     try {
       const res = await fetch("http://127.0.0.1:11434/api/tags");
@@ -215,10 +346,11 @@ const avoidanceContext = isAppending && recipes.length > 0
         }`).join(",\n        ");
 
     const spiceLexicon = flexibility >= 3 
-      ? `\n[FLAVOR BOMB LEXICON] 
-      - BREAK THE DEFAULT BIAS: Stop defaulting to just "Salt" and "Black Pepper". 
-      - USE PUNCHY, REAL-WORLD SEASONINGS: Use highly flavorful, recognizable pantry blends and sauces. e.g., Sriracha, Cajun seasoning, Everything Bagel seasoning, Chili Crisp, Hot Honey, Gochujang, Smoked Paprika, Curry Powder, Taco Seasoning, Pesto, Harissa, Soy Sauce, or Buffalo sauce.
-      - NO PRETENTIOUS INGREDIENTS: Do not require hyper-rare or obscure fine-dining micro-ingredients. We want intense, fulfilling, and highly accessible flavor.`
+      ? `\n[ADAPTIVE FLAVOR MANDATE] 
+      - BREAK THE DEFAULT BIAS: Never default to just "Salt and Black Pepper". 
+      - CONTEXTUAL SEASONING: You are NOT limited to a specific list of spices. You must analyze the core ingredients and the vibe, then curate the exact spices, fresh herbs, acid, or sauces the dish naturally NEEDS to be exceptional.
+      - THE "IF/THEN" RULE: Adapt to the cuisine. If leaning Asian, reach for ingredients like Gochujang, Soy, or Chili Crisp. If Southern, use Cajun, Smoked Paprika, or Hot Honey. If Italian, use fresh Basil, Calabrian chilies, or Balsamic glaze. 
+      - ADAPTABILITY: Let the dish dictate the flavor. We want intense, fulfilling, and highly accessible flavor profiles tailored perfectly to the specific recipe.`
       : "";
 
     const prompt = `
@@ -551,9 +683,19 @@ const avoidanceContext = isAppending && recipes.length > 0
 
           {selectedRecipe && !isGenerating && (
             <div className="rounded-3xl border border-zinc-200 bg-white p-6 md:p-12 shadow-2xl shadow-zinc-200/50 animate-in zoom-in-95 duration-300 border-t-[12px] border-t-emerald-500">
-              <button onClick={() => { setSelectedRecipe(null); setIsPantryVisible(true); }} className="group mb-8 flex items-center gap-2 text-[10px] font-black tracking-[0.2em] text-zinc-400 hover:text-emerald-600 transition-colors uppercase">
-                <span className="group-hover:-translate-x-1 transition-transform">←</span> Back to Menu
-              </button>
+              <div className="flex items-center justify-between mb-8">
+                <button onClick={() => { setSelectedRecipe(null); setIsPantryVisible(true); }} className="group flex items-center gap-2 text-[10px] font-black tracking-[0.2em] text-zinc-400 hover:text-emerald-600 transition-colors uppercase">
+                  <span className="group-hover:-translate-x-1 transition-transform">←</span> Back to Menu
+                </button>
+                
+                <button 
+                  onClick={() => saveRecipeToDatabase(selectedRecipe)}
+                  disabled={isSaving}
+                  className="bg-blue-600 text-white px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.1em] hover:bg-blue-700 disabled:opacity-50 transition-all shadow-md shadow-blue-600/20 active:scale-95 flex items-center gap-2"
+                >
+                  {isSaving ? "Saving..." : "Save to Database"}
+                </button>
+              </div>
               
               <div className="mb-10 pb-8 border-b border-zinc-100">
                 <h2 className="text-4xl md:text-5xl font-black text-zinc-900 tracking-tighter mb-4">{selectedRecipe.title}</h2>
