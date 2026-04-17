@@ -8,7 +8,8 @@ interface Recipe {
   id: number;
   title: string;
   description: string;
-  ingredients: string[];
+  pantryIngredients: string[];
+  additionalIngredients: string[];
   instructions: string[];
   prepTime: string;
 }
@@ -122,10 +123,15 @@ export function AiRecipePanel({ supabaseUrl, supabaseAnonKey }: { supabaseUrl: s
       
       [GOAL] Generate 1-3 high-concept gourmet recipes using: ${selectedIngredients.join(", ")}.
       
+      [STRICT INGREDIENT RULES]
+      - You MUST prioritize using ONLY the provided ingredients.
+      - If (and ONLY if) the provided ingredients are completely insufficient to create a viable dish, you may add essential staples (e.g., water, oil, salt, flour) or one crucial missing component.
+      - You must strictly separate the ingredients you used from the provided list ("pantryIngredients") and the ingredients you were forced to add ("additionalIngredients").
+      - If you did not add any extra ingredients, leave the "additionalIngredients" array empty [].
+
       [EXECUTION STRATEGY: MICRO-STEPS]
-      - Break the cooking process into MANY distinct, highly specific micro-steps. Aim for 8 to 12 steps per recipe.
-      - Do NOT clump actions together. 
-      - Keep each step punchy and readable (maximum 2 sentences per step), but include sensory cues (e.g., "sear until mahogany").
+      - Break the cooking process into 8 to 12 distinct, highly specific micro-steps.
+      - Do NOT clump actions. Maximum 2 sentences per step.
       - NO safety warnings or common-sense alerts.
       
       [SCHEMA (STRICT JSON)] Return an array of objects EXACTLY matching this structure: 
@@ -135,8 +141,9 @@ export function AiRecipePanel({ supabaseUrl, supabaseAnonKey }: { supabaseUrl: s
           "title": "Name", 
           "description": "Hook", 
           "prepTime": "XX mins", 
-          "ingredients": ["Ingredient 1 (Quantity)", "Ingredient 2 (Quantity)"], 
-          "instructions": ["Step 1 (max 2 sentences)", "Step 2...", "Step 3...", "Step 4..."]
+          "pantryIngredients": ["Ingredient 1 (Quantity)"],
+          "additionalIngredients": ["Missing Item (Quantity)"], 
+          "instructions": ["Step 1", "Step 2..."]
         }
       ]
     `;
@@ -367,21 +374,41 @@ export function AiRecipePanel({ supabaseUrl, supabaseAnonKey }: { supabaseUrl: s
 
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
                 <div className="lg:col-span-4 space-y-8">
-                  <div>
-                    <h5 className="font-black uppercase text-emerald-600 text-[10px] tracking-[0.3em] mb-6 flex items-center gap-2">
-                      <span className="h-px w-4 bg-emerald-500" /> Mise En Place
-                    </h5>
-                    <div className="flex flex-wrap gap-2">
-                      {(Array.isArray(selectedRecipe.ingredients) ? selectedRecipe.ingredients : typeof selectedRecipe.ingredients === 'string' ? (selectedRecipe.ingredients as string).split('\n') : []).filter(i => typeof i === 'string' && i.trim()).map((item, idx) => (
-                        <div key={idx} className="rounded-xl border border-zinc-100 bg-zinc-50/50 px-4 py-2.5 hover:bg-white hover:border-emerald-200 transition-all hover:shadow-sm">
-                          <p className="text-[12px] font-bold text-zinc-700 leading-tight">
-                            {item.replace(/^[*-]\s*/, '').trim()}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
+  <div>
+    <h5 className="font-black uppercase text-emerald-600 text-[10px] tracking-[0.3em] mb-6 flex items-center gap-2">
+      <span className="h-px w-4 bg-emerald-500" /> Active Pantry
+    </h5>
+    <div className="flex flex-wrap gap-2">
+      {/* 1. SAFE MAP: The ingredients you actually have */}
+      {(Array.isArray(selectedRecipe.pantryIngredients) ? selectedRecipe.pantryIngredients : []).filter(i => typeof i === 'string' && i.trim()).map((item, idx) => (
+        <div key={`pantry-${idx}`} className="rounded-xl border border-zinc-100 bg-zinc-50/50 px-4 py-2.5 hover:bg-white hover:border-emerald-200 transition-all hover:shadow-sm">
+          <p className="text-[12px] font-bold text-zinc-700 leading-tight">
+            {item.replace(/^[*-]\s*/, '').trim()}
+          </p>
+        </div>
+      ))}
+    </div>
+
+    {/* 2. CONDITIONAL RENDER: The "Hallucinated" or required extra ingredients */}
+    {Array.isArray(selectedRecipe.additionalIngredients) && selectedRecipe.additionalIngredients.length > 0 && (
+      <div className="mt-8 pt-8 border-t border-zinc-100 animate-in fade-in duration-500">
+        <h5 className="font-black uppercase text-amber-500 text-[10px] tracking-[0.3em] mb-6 flex items-center gap-2">
+          <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" /> 
+          Additional Items Needed
+        </h5>
+        <div className="flex flex-wrap gap-2">
+          {selectedRecipe.additionalIngredients.filter(i => typeof i === 'string' && i.trim()).map((item, idx) => (
+            <div key={`extra-${idx}`} className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 shadow-sm">
+              <p className="text-[12px] font-bold text-amber-700 leading-tight">
+                {item.replace(/^[*-]\s*/, '').trim()}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+    )}
+  </div>
+</div>
 
                 <div className="lg:col-span-8 space-y-8">
                   <h5 className="font-black uppercase text-emerald-600 text-[10px] tracking-[0.3em] flex items-center gap-2">
