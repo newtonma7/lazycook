@@ -637,7 +637,7 @@ const avoidanceContext = isAppending && recipes.length > 0
                   Terminal Command
                 </h5>
                 <code className="block bg-zinc-900 text-emerald-400 p-4 rounded-xl font-mono text-[11px] shadow-inner select-all">
-                  ollama run {selectedModel || "gemma2"}
+                  ollama run {selectedModel || "gemma4-unsloth-iq4-xs:latest"}
                 </code>
               </div>
             </div>
