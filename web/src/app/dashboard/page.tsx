@@ -6,6 +6,7 @@ import { MealPlanPanel } from "../meal-plan";
 import { PantryPanel } from "../pantry";
 import { RecipePanel } from "../recipes";
 import { AiRecipePanel } from "../ai-recipe-panel";
+import { getCurrentAccount } from "../account-auth";
 import { TableTabs, type Tab } from "../table-tabs";
 
 export const dynamic = "force-dynamic";
@@ -16,13 +17,15 @@ type PageProps = {
 
 export default async function DashboardPage({ searchParams }: PageProps) {
   const params = await searchParams;
+  const currentAccount = await getCurrentAccount();
+  const isAdmin = currentAccount?.role === "admin";
 
   const activeTab = (
-    params.tab === "ingredient" ||
-    params.tab === "recipe" ||
-    params.tab === "pantry" ||
-    params.tab === "meal_plan" ||
-    params.tab === "ai-recipe"
+    (params.tab === "ingredient" && isAdmin) ||
+      params.tab === "recipe" ||
+      params.tab === "pantry" ||
+      params.tab === "meal_plan" ||
+      params.tab === "ai-recipe"
       ? params.tab
       : "account"
   ) as Tab;
@@ -62,7 +65,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       </div>
 
       <div className="mb-6">
-        <TableTabs active={activeTab} />
+        <TableTabs active={activeTab} isAdmin={isAdmin} />
       </div>
 
       <section aria-labelledby="panel-heading" className="rounded-b-lg border border-t-0 border-border bg-surface p-6 shadow-sm">
