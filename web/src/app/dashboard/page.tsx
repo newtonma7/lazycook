@@ -12,13 +12,15 @@ import { TableTabs, type Tab } from "../table-tabs";
 export const dynamic = "force-dynamic";
 
 type PageProps = {
-  searchParams: Promise<{ tab?: string; message?: string; error?: string }>;
+  searchParams: Promise<{ tab?: string; message?: string; error?: string; plan?: string }>;
 };
 
 export default async function DashboardPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const currentAccount = await getCurrentAccount();
   const isAdmin = currentAccount?.role === "admin";
+  const parsedPlanId = params.plan ? Number.parseInt(params.plan, 10) : NaN;
+  const selectedMealPlanId = Number.isFinite(parsedPlanId) && parsedPlanId > 0 ? parsedPlanId : null;
 
   const activeTab = (
     (params.tab === "ingredient" && isAdmin) ||
@@ -91,7 +93,11 @@ export default async function DashboardPage({ searchParams }: PageProps) {
           <PantryPanel supabaseUrl={supabaseUrl} supabaseAnonKey={supabaseAnonKey} />
         )}
         {activeTab === "meal_plan" && (
-          <MealPlanPanel supabaseUrl={supabaseUrl} supabaseAnonKey={supabaseAnonKey} />
+          <MealPlanPanel
+            supabaseUrl={supabaseUrl}
+            supabaseAnonKey={supabaseAnonKey}
+            selectedPlanId={selectedMealPlanId}
+          />
         )}
         {activeTab === "ai-recipe" && (
           <AiRecipePanel supabaseUrl={supabaseUrl} supabaseAnonKey={supabaseAnonKey} />
