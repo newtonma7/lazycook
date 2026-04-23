@@ -161,7 +161,7 @@ export async function AccountPanel({ message, error }: Props) {
                 <div className="grid gap-6 lg:grid-cols-2">
                     <section className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
                         <h3 className="text-lg font-semibold text-zinc-900">Sign in</h3>
-                        <p className="mt-2 text-sm text-zinc-600">Sign in with your Supabase auth email and password.</p>
+                        <p className="mt-2 text-sm text-zinc-600">Sign in with the email and password for your consumer or admin account.</p>
 
                         <form action={signInAccount} className="mt-5 space-y-4">
                             <div className="flex flex-col gap-1">

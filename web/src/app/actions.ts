@@ -3,14 +3,19 @@
 import { createClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
 import {
+  buildInsertPayload,
   clearAccountSession,
   createSupabaseServerAuthClient,
+  findAccountByEmailNormalized,
+  getRoleConfig,
   getSupabaseEnv,
+  hashPassword,
   normalizeEmail,
   normalizePassword,
   normalizeUsername,
   readAccountSession,
   setAccountSession,
+  verifyPassword,
   type AccountRole,
 } from "./account-auth";
 import { redirect, unstable_rethrow } from "next/navigation";
@@ -49,32 +54,37 @@ export async function signUpAccount(formData: FormData) {
   }
 
   try {
+    const existing = await findAccountByEmailNormalized(email);
+    if (existing) {
+      redirect(buildAccountRedirect({ error: "An account with this email already exists." }));
+    }
+
     const supabase = createSupabaseServerAuthClient();
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          username,
-          role,
-        },
-      },
-    });
+    const passwordHash = hashPassword(password);
+    const payload = await buildInsertPayload(role, username, email, passwordHash);
+    const config = getRoleConfig(role);
+
+    const { data, error } = await supabase.from(config.table).insert(payload).select(config.idColumn).single();
 
     if (error) {
-      throw new Error(error?.message ?? "Unable to create account.");
+      throw new Error(error.message ?? "Unable to create account.");
     }
-    if (data.session) {
-      await setAccountSession({
-        accessToken: data.session.access_token,
-        refreshToken: data.session.refresh_token,
-      });
+
+    const idValue = data?.[config.idColumn as keyof typeof data];
+    const userId =
+      typeof idValue === "number"
+        ? String(idValue)
+        : typeof idValue === "string"
+          ? idValue
+          : "";
+
+    if (!userId) {
+      throw new Error("Unable to create account.");
     }
+
+    await setAccountSession({ role, userId });
     revalidatePath("/dashboard");
-    if (data.session) {
-      redirect(buildAccountRedirect({ message: "Account created. You're signed in." }));
-    }
-    redirect(buildAccountRedirect({ message: "Account created. Check your email to confirm sign-in." }));
+    redirect(buildAccountRedirect({ message: "Account created. You're signed in." }));
   } catch (error) {
     unstable_rethrow(error);
     redirect(buildAccountRedirect({ error: getAccountMessage(error) }));
@@ -90,19 +100,38 @@ export async function signInAccount(formData: FormData) {
   }
 
   try {
-    const supabase = createSupabaseServerAuthClient();
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const found = await findAccountByEmailNormalized(email);
 
-    if (error || !data.session) {
+    if (!found) {
       redirect(buildAccountRedirect({ error: "Invalid email or password." }));
     }
-    await setAccountSession({
-      accessToken: data.session.access_token,
-      refreshToken: data.session.refresh_token,
-    });
+
+    const storedHash = typeof found.row.password_hash === "string" ? found.row.password_hash : "";
+
+    if (!verifyPassword(password, storedHash)) {
+      redirect(buildAccountRedirect({ error: "Invalid email or password." }));
+    }
+
+    const status = typeof found.row.status === "string" ? found.row.status : "active";
+
+    if (status !== "active") {
+      redirect(buildAccountRedirect({ error: "This account is not active." }));
+    }
+
+    const config = getRoleConfig(found.role);
+    const idValue = found.row[config.idColumn];
+    const userId =
+      typeof idValue === "number"
+        ? String(idValue)
+        : typeof idValue === "string"
+          ? idValue
+          : "";
+
+    if (!userId) {
+      redirect(buildAccountRedirect({ error: "Invalid email or password." }));
+    }
+
+    await setAccountSession({ role: found.role, userId });
     revalidatePath("/dashboard");
     redirect(buildAccountRedirect({ message: "Signed in." }));
   } catch (error) {
@@ -122,50 +151,55 @@ export async function updateCurrentAccount(formData: FormData) {
   }
 
   try {
-    const supabase = createSupabaseServerAuthClient();
-    const { error: setSessionError } = await supabase.auth.setSession({
-      access_token: session.accessToken,
-      refresh_token: session.refreshToken,
-    });
-    if (setSessionError) {
-      throw new Error(setSessionError.message);
+    if (nextPassword && nextPassword.length < 8) {
+      redirect(buildAccountRedirect({ error: "New passwords must be at least 8 characters long." }));
     }
-    const payload: {
-      email: string;
-      password?: string;
-      data: {
-        username: string;
-      };
-    } = {
+
+    const supabase = createSupabaseServerAuthClient();
+    const config = getRoleConfig(session.role);
+    const idNumber = Number.parseInt(session.userId, 10);
+
+    if (!Number.isFinite(idNumber)) {
+      throw new Error("Invalid session.");
+    }
+
+    const existingWithEmail = await findAccountByEmailNormalized(nextEmail);
+    if (existingWithEmail) {
+      const otherConfig = getRoleConfig(existingWithEmail.role);
+      const rawOtherId = existingWithEmail.row[otherConfig.idColumn];
+      const otherNumericId =
+        typeof rawOtherId === "number"
+          ? rawOtherId
+          : typeof rawOtherId === "string"
+            ? Number.parseInt(rawOtherId, 10)
+            : Number.NaN;
+      const sameAccount =
+        existingWithEmail.role === session.role &&
+        Number.isFinite(otherNumericId) &&
+        otherNumericId === idNumber;
+
+      if (!sameAccount) {
+        redirect(buildAccountRedirect({ error: "That email is already in use." }));
+      }
+    }
+
+    const updatePayload: Record<string, string> = {
+      username: nextUsername,
       email: nextEmail,
-      data: {
-        username: nextUsername,
-      },
     };
 
     if (nextPassword) {
-      if (nextPassword.length < 8) {
-        redirect(buildAccountRedirect({ error: "New passwords must be at least 8 characters long." }));
-      }
-
-      payload.password = nextPassword;
+      updatePayload.password_hash = hashPassword(nextPassword);
     }
 
-    const { data, error } = await supabase.auth.updateUser(payload);
+    const { error } = await supabase.from(config.table).update(updatePayload).eq(config.idColumn, idNumber);
 
     if (error) {
       throw new Error(error.message);
     }
-    const nextSession = (await supabase.auth.getSession()).data.session;
-    if (nextSession) {
-      await setAccountSession({
-        accessToken: nextSession.access_token,
-        refreshToken: nextSession.refresh_token,
-      });
-    }
+
     revalidatePath("/dashboard");
-    const requiresConfirmation = data.user?.new_email && data.user?.new_email !== data.user?.email;
-    redirect(buildAccountRedirect({ message: requiresConfirmation ? "Profile updated. Confirm your new email from your inbox." : "Account details updated." }));
+    redirect(buildAccountRedirect({ message: "Account details updated." }));
   } catch (error) {
     unstable_rethrow(error);
     redirect(buildAccountRedirect({ error: getAccountMessage(error) }));
@@ -198,7 +232,7 @@ export async function addConsumer(formData: FormData) {
     {
       username,
       email,
-      password_hash: password,
+      password_hash: hashPassword(password),
       status: "active",
     },
   ]);
@@ -238,21 +272,19 @@ export async function updateConsumer(formData: FormData) {
   const consumer_id = typeof raw === "string" ? Number.parseInt(raw, 10) : NaN;
   const username = (formData.get("username") as string)?.trim();
   const email = (formData.get("email") as string)?.trim();
-  const password = formData.get("password") as string;
+  const passwordRaw = formData.get("password");
+  const password = typeof passwordRaw === "string" ? passwordRaw : "";
   const status = formData.get("status") as string;
 
   if (!Number.isFinite(consumer_id) || !username || !email || !status) return;
 
   const supabase = createClient(supabaseUrl, supabaseAnonKey);
-  const { error } = await supabase
-    .from("consumer")
-    .update({
-      username,
-      email,
-      password_hash: password ?? "",
-      status,
-    })
-    .eq("consumer_id", consumer_id);
+  const updateFields: Record<string, string> = { username, email, status };
+  if (password.trim()) {
+    updateFields.password_hash = hashPassword(password);
+  }
+
+  const { error } = await supabase.from("consumer").update(updateFields).eq("consumer_id", consumer_id);
 
   if (error) {
     console.error("Update Error:", error.message);

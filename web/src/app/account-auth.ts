@@ -21,9 +21,9 @@ export type CurrentAccount = {
     createdAt: string | null;
 };
 
-type AccountSession = {
-    accessToken: string;
-    refreshToken: string;
+export type AccountSession = {
+    role: AccountRole;
+    userId: string;
 };
 
 const SESSION_COOKIE_NAME = "lazycook-account-session";
@@ -90,8 +90,34 @@ export function getRoleConfig(role: AccountRole) {
     return ACCOUNT_CONFIG[role];
 }
 
+/** Looks up a user by exact email match; consumer row wins if both tables contain the same email. */
+export async function findAccountByEmailNormalized(email: string) {
+    const supabase = createSupabaseServerAuthClient();
+    const { data: consumerRow, error: consumerError } = await supabase
+        .from("consumer")
+        .select("*")
+        .eq("email", email)
+        .maybeSingle();
+
+    if (!consumerError && consumerRow) {
+        return { role: "consumer" as const, row: consumerRow as AccountRow };
+    }
+
+    const { data: adminRow, error: adminError } = await supabase
+        .from("admin")
+        .select("*")
+        .eq("email", email)
+        .maybeSingle();
+
+    if (!adminError && adminRow) {
+        return { role: "admin" as const, row: adminRow as AccountRow };
+    }
+
+    return null;
+}
+
 export async function hasColumn(table: string, column: string) {
-    const supabase = createSupabaseBrowserKeyClient();
+    const supabase = createSupabaseServerAuthClient();
     const { error } = await supabase.from(table).select(column, { head: true, count: "exact" }).limit(1);
     return !error;
 }
@@ -133,6 +159,19 @@ function encodeSession(session: AccountSession) {
     return `${payload}.${signature}`;
 }
 
+function isAccountSession(value: unknown): value is AccountSession {
+    if (typeof value !== "object" || value === null) {
+        return false;
+    }
+
+    const record = value as Record<string, unknown>;
+    if (record.role !== "admin" && record.role !== "consumer") {
+        return false;
+    }
+
+    return typeof record.userId === "string" && record.userId.length > 0;
+}
+
 function decodeSession(token: string): AccountSession | null {
     const [payload, signature] = token.split(".");
 
@@ -141,7 +180,8 @@ function decodeSession(token: string): AccountSession | null {
     }
 
     try {
-        return JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as AccountSession;
+        const parsed: unknown = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
+        return isAccountSession(parsed) ? parsed : null;
     } catch {
         return null;
     }
@@ -198,21 +238,22 @@ export async function buildInsertPayload(role: AccountRole, username: string, em
     return payload;
 }
 
-export function mapCurrentAccount(row: AccountRow) {
-    const userId = typeof row.id === "string" ? row.id : "";
-    const email = typeof row.email === "string" ? row.email : "";
-    const metadata = typeof row.user_metadata === "object" && row.user_metadata !== null
-        ? (row.user_metadata as Record<string, unknown>)
-        : {};
-    const rawRole = metadata.role;
-    const role: AccountRole = rawRole === "admin" ? "admin" : "consumer";
+export function mapDbRowToCurrentAccount(role: AccountRole, row: AccountRow): CurrentAccount {
+    const config = getRoleConfig(role);
+    const idValue = row[config.idColumn];
+    const userId =
+        typeof idValue === "number"
+            ? String(idValue)
+            : typeof idValue === "string"
+                ? idValue
+                : "";
 
     return {
         role,
         userId,
-        email,
-        username: typeof metadata.username === "string" ? metadata.username : null,
-        status: "active",
+        email: typeof row.email === "string" ? row.email : "",
+        username: typeof row.username === "string" ? row.username : null,
+        status: typeof row.status === "string" ? row.status : null,
         createdAt: typeof row.created_at === "string" ? row.created_at : null,
     } satisfies CurrentAccount;
 }
@@ -223,22 +264,33 @@ export async function getCurrentAccount() {
     if (!session) {
         return null;
     }
+
     const supabase = createSupabaseServerAuthClient();
-    const { error: setSessionError } = await supabase.auth.setSession({
-        access_token: session.accessToken,
-        refresh_token: session.refreshToken,
-    });
+    const config = getRoleConfig(session.role);
+    const idNumber = Number.parseInt(session.userId, 10);
 
-    if (setSessionError) {
+    if (!Number.isFinite(idNumber)) {
         return null;
     }
 
-    const { data, error } = await supabase.auth.getUser();
-    if (error || !data.user) {
+    const { data, error } = await supabase
+        .from(config.table)
+        .select("*")
+        .eq(config.idColumn, idNumber)
+        .maybeSingle();
+
+    if (error || !data) {
         return null;
     }
 
-    return mapCurrentAccount(data.user as unknown as AccountRow);
+    const row = data as AccountRow;
+    const status = typeof row.status === "string" ? row.status : null;
+
+    if (status && status !== "active") {
+        return null;
+    }
+
+    return mapDbRowToCurrentAccount(session.role, row);
 }
 
 export function getRoleLabel(role: AccountRole) {
