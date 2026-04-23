@@ -25,6 +25,11 @@ function buildAccountRedirect(params: Record<string, string>) {
   return `/dashboard?${search.toString()}`;
 }
 
+function buildForgotPasswordRedirect(params: Record<string, string>) {
+  const search = new URLSearchParams(params);
+  return `/forgot-password?${search.toString()}`;
+}
+
 function parseRole(raw: FormDataEntryValue | null): AccountRole | null {
   return raw === "admin" || raw === "consumer" ? raw : null;
 }
@@ -56,7 +61,11 @@ export async function signUpAccount(formData: FormData) {
   try {
     const existing = await findAccountByEmailNormalized(email);
     if (existing) {
-      redirect(buildAccountRedirect({ error: "An account with this email already exists." }));
+      redirect(
+        buildAccountRedirect({
+          error: `This email is already registered on a ${existing.role} account. Try signing in or resetting your password.`,
+        }),
+      );
     }
 
     const supabase = createSupabaseServerAuthClient();
@@ -137,6 +146,52 @@ export async function signInAccount(formData: FormData) {
   } catch (error) {
     unstable_rethrow(error);
     redirect(buildAccountRedirect({ error: getAccountMessage(error) }));
+  }
+}
+
+export async function forgotPasswordAccount(formData: FormData) {
+  const email = normalizeEmail(formData.get("email"));
+  const nextPassword = normalizePassword(formData.get("password"));
+
+  if (!email || nextPassword.length < 8) {
+    redirect(buildForgotPasswordRedirect({ error: "Enter a valid email and a new password with at least 8 characters." }));
+  }
+
+  try {
+    const found = await findAccountByEmailNormalized(email);
+
+    if (!found) {
+      redirect(buildForgotPasswordRedirect({ error: "No account is registered with that email." }));
+    }
+
+    const config = getRoleConfig(found.role);
+    const rawId = found.row[config.idColumn];
+    const idNumber =
+      typeof rawId === "number"
+        ? rawId
+        : typeof rawId === "string"
+          ? Number.parseInt(rawId, 10)
+          : Number.NaN;
+
+    if (!Number.isFinite(idNumber)) {
+      throw new Error("Unable to reset password.");
+    }
+
+    const supabase = createSupabaseServerAuthClient();
+    const { error } = await supabase
+      .from(config.table)
+      .update({ password_hash: hashPassword(nextPassword) })
+      .eq(config.idColumn, idNumber);
+
+    if (error) {
+      throw new Error(error.message ?? "Unable to reset password.");
+    }
+
+    revalidatePath("/dashboard");
+    redirect(buildForgotPasswordRedirect({ message: "Password updated. You can sign in with your new password." }));
+  } catch (error) {
+    unstable_rethrow(error);
+    redirect(buildForgotPasswordRedirect({ error: getAccountMessage(error) }));
   }
 }
 

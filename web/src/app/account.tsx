@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { deleteCurrentAccount, signInAccount, signOutAccount, signUpAccount, updateCurrentAccount } from "./actions";
 import { getCurrentAccount, getRoleLabel } from "./account-auth";
 
@@ -196,6 +197,15 @@ export async function AccountPanel({ message, error }: Props) {
                                 Sign in
                             </button>
                         </form>
+
+                        <div className="mt-4 text-right">
+                            <Link
+                                href="/forgot-password"
+                                className="text-xs text-zinc-500 underline decoration-zinc-300 underline-offset-2 hover:text-zinc-700"
+                            >
+                                Forgot password?
+                            </Link>
+                        </div>
                     </section>
 
                     <section className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
