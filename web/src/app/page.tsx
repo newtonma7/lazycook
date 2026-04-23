@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getCurrentAccount } from "./account-auth";
 
 const ingredients = [
   { name: "tomatoes", cls: "bg-tomato/10 text-tomato" },
@@ -36,7 +37,10 @@ const steps = [
   },
 ];
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  const currentAccount = await getCurrentAccount();
+  const pantryEntryHref = currentAccount ? "/home" : "/dashboard?tab=account&auth=signup";
+
   return (
     <div className="relative min-h-screen bg-cream selection:bg-tomato/20 selection:text-ink">
       {/* ─── Vignette overlay ─── */}
@@ -52,7 +56,7 @@ export default function LandingPage() {
           lazycook
         </span>
         <Link
-          href="/dashboard?tab=pantry"
+          href={pantryEntryHref}
           className="group flex items-center gap-2 rounded-full border border-ink/12 bg-cream/80 backdrop-blur-sm px-5 py-2.5 font-body text-sm text-ink transition-all duration-300 hover:bg-ink hover:text-cream hover:border-ink"
         >
           open pantry
@@ -88,7 +92,7 @@ export default function LandingPage() {
 
           <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-4 animate-slide-up [animation-delay:0.45s]">
             <Link
-              href="/dashboard?tab=pantry"
+              href={pantryEntryHref}
               className="rounded-full bg-ink px-8 py-3.5 font-body text-sm font-medium text-cream tracking-wide transition-all duration-300 hover:bg-ink-light hover:shadow-lg hover:shadow-ink/10 hover:-translate-y-0.5"
             >
               Open your pantry
@@ -166,7 +170,7 @@ export default function LandingPage() {
             and discover what you can make tonight.
           </p>
           <Link
-            href="/dashboard?tab=pantry"
+            href={pantryEntryHref}
             className="inline-block rounded-full bg-ink px-10 py-4 font-body text-sm font-medium text-cream tracking-wide transition-all duration-300 hover:bg-ink-light hover:shadow-lg hover:shadow-ink/10 hover:-translate-y-0.5"
           >
             Get started &mdash; it&apos;s free
