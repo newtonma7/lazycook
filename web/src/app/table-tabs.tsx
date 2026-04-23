@@ -7,13 +7,13 @@ type Props = {
   isAdmin: boolean;
 };
 
-const tabs: { key: Tab; label: string; adminOnly?: boolean }[] = [
+const tabs: { key: Tab; label: string; adminOnly?: boolean; consumerOnly?: boolean }[] = [
   { key: "account", label: "Account" },
   { key: "ingredient", label: "Ingredients", adminOnly: true },
   { key: "recipe", label: "Recipe" },
-  { key: "pantry", label: "Pantry" },
-  { key: "meal_plan", label: "Meal Plan" },
-  { key: "ai-recipe", label: "AI Chef" },
+  { key: "pantry", label: "Pantry", consumerOnly: true },
+  { key: "meal_plan", label: "Meal Plan", consumerOnly: true },
+  { key: "ai-recipe", label: "AI Chef", consumerOnly: true },
 ];
 
 export function TableTabs({ active, isAdmin }: Props) {
@@ -23,7 +23,7 @@ export function TableTabs({ active, isAdmin }: Props) {
   const inactiveCls =
     "border-transparent bg-linen/60 text-ink-muted hover:bg-linen hover:text-ink";
 
-  const visibleTabs = tabs.filter((tab) => !tab.adminOnly || isAdmin);
+  const visibleTabs = tabs.filter((tab) => (!tab.adminOnly || isAdmin) && (!tab.consumerOnly || !isAdmin));
 
   return (
     <nav className="flex flex-wrap gap-0.5 border-b border-border" aria-label="Data tables">
