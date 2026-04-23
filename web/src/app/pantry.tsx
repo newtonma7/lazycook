@@ -13,7 +13,7 @@ export type PantryRow = {
     pantry_id: number;
     consumer_id: number | null;
     pantry_name: string;
-}; 
+};
 
 
 
@@ -201,7 +201,7 @@ export async function PantryPanel({ supabaseUrl, supabaseAnonKey }: Props) {
                                                         </option>
                                                         {ingredients.map((ingredient) => (
                                                             <option key={ingredient.ingredient_id} value={ingredient.ingredient_id}>
-                                                                {ingredient.name} ({ingredient.ingredient_id})
+                                                                {ingredient.name}
                                                             </option>
                                                         ))}
                                                     </select>
@@ -264,7 +264,7 @@ export async function PantryPanel({ supabaseUrl, supabaseAnonKey }: Props) {
                                                                             >
                                                                                 {ingredients.map((ingredient) => (
                                                                                     <option key={ingredient.ingredient_id} value={ingredient.ingredient_id}>
-                                                                                        {ingredient.name} ({ingredient.ingredient_id})
+                                                                                        {ingredient.name}
                                                                                     </option>
                                                                                 ))}
                                                                             </select>

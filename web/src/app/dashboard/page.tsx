@@ -2,27 +2,32 @@ import { unstable_noStore as noStore } from "next/cache";
 import Link from "next/link";
 import { AccountPanel } from "../account";
 import { IngredientPanel } from "../ingredient";
-import { MealPlanPanel } from "../meal-plan";
+import { MealPlanPanel } from "../meal-plan/meal-plan";
 import { PantryPanel } from "../pantry";
 import { RecipePanel } from "../recipes";
 import { AiRecipePanel } from "../ai-recipe-panel";
+import { getCurrentAccount } from "../account-auth";
 import { TableTabs, type Tab } from "../table-tabs";
 
 export const dynamic = "force-dynamic";
 
 type PageProps = {
-  searchParams: Promise<{ tab?: string; message?: string; error?: string }>;
+  searchParams: Promise<{ tab?: string; message?: string; error?: string; plan?: string }>;
 };
 
 export default async function DashboardPage({ searchParams }: PageProps) {
   const params = await searchParams;
+  const currentAccount = await getCurrentAccount();
+  const isAdmin = currentAccount?.role === "admin";
+  const parsedPlanId = params.plan ? Number.parseInt(params.plan, 10) : NaN;
+  const selectedMealPlanId = Number.isFinite(parsedPlanId) && parsedPlanId > 0 ? parsedPlanId : null;
 
   const activeTab = (
-    params.tab === "ingredient" ||
-    params.tab === "recipe" ||
-    params.tab === "pantry" ||
-    params.tab === "meal_plan" ||
-    params.tab === "ai-recipe"
+    (params.tab === "ingredient" && isAdmin) ||
+      params.tab === "recipe" ||
+      params.tab === "pantry" ||
+      params.tab === "meal_plan" ||
+      params.tab === "ai-recipe"
       ? params.tab
       : "account"
   ) as Tab;
@@ -61,11 +66,11 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         </Link>
       </div>
 
-      <div className="mb-6">
-        <TableTabs active={activeTab} />
-      </div>
+      {!!currentAccount && (
+        <TableTabs active={activeTab} isAdmin={isAdmin} />
+      )}
 
-      <section aria-labelledby="panel-heading" className="rounded-b-lg border border-t-0 border-border bg-surface p-6 shadow-sm">
+      <section aria-labelledby="panel-heading" className={`border border-border bg-surface p-6 shadow-sm ${!!currentAccount ? "rounded-b-lg border-t-0" : "rounded-lg"}`}>
         <h2 id="panel-heading" className="sr-only">
           {activeTab === "account" && "Account records"}
           {activeTab === "ingredient" && "Ingredient records"}
@@ -88,7 +93,11 @@ export default async function DashboardPage({ searchParams }: PageProps) {
           <PantryPanel supabaseUrl={supabaseUrl} supabaseAnonKey={supabaseAnonKey} />
         )}
         {activeTab === "meal_plan" && (
-          <MealPlanPanel supabaseUrl={supabaseUrl} supabaseAnonKey={supabaseAnonKey} />
+          <MealPlanPanel
+            supabaseUrl={supabaseUrl}
+            supabaseAnonKey={supabaseAnonKey}
+            selectedPlanId={selectedMealPlanId}
+          />
         )}
         {activeTab === "ai-recipe" && (
           <AiRecipePanel supabaseUrl={supabaseUrl} supabaseAnonKey={supabaseAnonKey} />

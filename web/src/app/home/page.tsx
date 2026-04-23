@@ -36,14 +36,6 @@ export default async function HomePage() {
           )}
         </div>
         <div className="flex items-center gap-3">
-          {account && (
-            <Link
-              href="/dashboard?tab=account"
-              className="rounded-full border border-ink/12 px-4 py-2 font-body text-xs text-ink-muted tracking-wide transition-all duration-300 hover:bg-ink hover:text-cream hover:border-ink"
-            >
-              Account
-            </Link>
-          )}
           <Link
             href="/"
             className="rounded-full border border-ink/12 px-4 py-2 font-body text-xs text-ink-muted tracking-wide transition-all duration-300 hover:bg-ink hover:text-cream hover:border-ink"

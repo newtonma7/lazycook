@@ -808,6 +808,10 @@ export async function deletePantryItem(formData: FormData) {
 
 /* ───────── Meal Plan CRUD ───────── */
 
+function mealPlanRedirectPath(planId?: number | null) {
+  return planId ? `/dashboard?tab=meal_plan&plan=${planId}` : "/dashboard?tab=meal_plan";
+}
+
 export async function addMealPlan(formData: FormData) {
   const { supabaseUrl, supabaseAnonKey } = getSupabaseEnv();
   if (!supabaseUrl || !supabaseAnonKey) return;
@@ -831,11 +835,39 @@ export async function addMealPlan(formData: FormData) {
   redirect("/dashboard?tab=meal_plan");
 }
 
+export async function addMealPlanAndReturn(formData: FormData): Promise<{ meal_plan_id: number } | null> {
+  const { supabaseUrl, supabaseAnonKey } = getSupabaseEnv();
+  if (!supabaseUrl || !supabaseAnonKey) return null;
+
+  const plan_name = (formData.get("plan_name") as string)?.trim();
+  const consumer_id = parseInteger(formData.get("consumer_id"));
+  const start_date = parseOptionalText(formData.get("start_date"));
+  const end_date = parseOptionalText(formData.get("end_date"));
+  if (!plan_name || !consumer_id) return null;
+
+  const supabase = createClient(supabaseUrl, supabaseAnonKey);
+  const { data, error } = await supabase.from("meal_plan").insert([
+    { plan_name, consumer_id, start_date, end_date },
+  ]).select();
+
+  if (error) {
+    console.error("Meal plan insert error:", error.message);
+    return null;
+  }
+
+  if (!data || !data[0]) {
+    return null;
+  }
+
+  return { meal_plan_id: data[0].meal_plan_id };
+}
+
 export async function updateMealPlan(formData: FormData) {
   const { supabaseUrl, supabaseAnonKey } = getSupabaseEnv();
   if (!supabaseUrl || !supabaseAnonKey) return;
 
   const meal_plan_id = parseInteger(formData.get("meal_plan_id"));
+  const redirect_plan_id = parseInteger(formData.get("redirect_plan_id"));
   const plan_name = (formData.get("plan_name") as string)?.trim();
   const consumer_id = parseInteger(formData.get("consumer_id"));
   const start_date = parseOptionalText(formData.get("start_date"));
@@ -853,7 +885,7 @@ export async function updateMealPlan(formData: FormData) {
     return;
   }
 
-  redirect("/dashboard?tab=meal_plan");
+  redirect(mealPlanRedirectPath(redirect_plan_id ?? meal_plan_id));
 }
 
 export async function deleteMealPlan(formData: FormData) {
@@ -887,6 +919,7 @@ export async function addMealPlanItem(formData: FormData) {
   if (!supabaseUrl || !supabaseAnonKey) return;
 
   const meal_plan_id = parseInteger(formData.get("meal_plan_id"));
+  const redirect_plan_id = parseInteger(formData.get("redirect_plan_id"));
   const recipe_id = parseInteger(formData.get("recipe_id"));
   const scheduled_for = parseOptionalText(formData.get("scheduled_for"));
   const meal_type = parseOptionalText(formData.get("meal_type"));
@@ -904,7 +937,7 @@ export async function addMealPlanItem(formData: FormData) {
     return;
   }
 
-  redirect("/dashboard?tab=meal_plan");
+  redirect(mealPlanRedirectPath(redirect_plan_id ?? meal_plan_id));
 }
 
 export async function updateMealPlanItem(formData: FormData) {
@@ -912,6 +945,7 @@ export async function updateMealPlanItem(formData: FormData) {
   if (!supabaseUrl || !supabaseAnonKey) return;
 
   const meal_plan_item_id = parseInteger(formData.get("meal_plan_item_id"));
+  const redirect_plan_id = parseInteger(formData.get("redirect_plan_id"));
   const recipe_id = parseInteger(formData.get("recipe_id"));
   const scheduled_for = parseOptionalText(formData.get("scheduled_for"));
   const meal_type = parseOptionalText(formData.get("meal_type"));
@@ -930,7 +964,7 @@ export async function updateMealPlanItem(formData: FormData) {
     return;
   }
 
-  redirect("/dashboard?tab=meal_plan");
+  redirect(mealPlanRedirectPath(redirect_plan_id));
 }
 
 export async function deleteMealPlanItem(formData: FormData) {
@@ -938,6 +972,7 @@ export async function deleteMealPlanItem(formData: FormData) {
   if (!supabaseUrl || !supabaseAnonKey) return;
 
   const meal_plan_item_id = parseInteger(formData.get("meal_plan_item_id"));
+  const redirect_plan_id = parseInteger(formData.get("redirect_plan_id"));
   if (!meal_plan_item_id) return;
 
   const supabase = createClient(supabaseUrl, supabaseAnonKey);
@@ -948,5 +983,5 @@ export async function deleteMealPlanItem(formData: FormData) {
     return;
   }
 
-  redirect("/dashboard?tab=meal_plan");
+  redirect(mealPlanRedirectPath(redirect_plan_id));
 }

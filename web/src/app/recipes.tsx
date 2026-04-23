@@ -391,7 +391,7 @@ export async function RecipePanel({ supabaseUrl, supabaseAnonKey }: Props) {
                                                         </option>
                                                         {ingredients.map((ingredient) => (
                                                             <option key={ingredient.ingredient_id} value={ingredient.ingredient_id}>
-                                                                {ingredient.name} ({ingredient.ingredient_id})
+                                                                {ingredient.name}
                                                             </option>
                                                         ))}
                                                     </select>
@@ -456,7 +456,7 @@ export async function RecipePanel({ supabaseUrl, supabaseAnonKey }: Props) {
                                                                             >
                                                                                 {ingredients.map((ingredient) => (
                                                                                     <option key={ingredient.ingredient_id} value={ingredient.ingredient_id}>
-                                                                                        {ingredient.name} ({ingredient.ingredient_id})
+                                                                                        {ingredient.name}
                                                                                     </option>
                                                                                 ))}
                                                                             </select>
