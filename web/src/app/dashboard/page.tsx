@@ -2,7 +2,7 @@ import { unstable_noStore as noStore } from "next/cache";
 import Link from "next/link";
 import { AccountPanel } from "../account";
 import { IngredientPanel } from "../ingredient";
-import { MealPlanPanel } from "../meal-plan";
+import { MealPlanPanel } from "../meal-plan/meal-plan";
 import { PantryPanel } from "../pantry";
 import { RecipePanel } from "../recipes";
 import { AiRecipePanel } from "../ai-recipe-panel";
@@ -66,11 +66,11 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         </Link>
       </div>
 
-      <div className="mb-6">
+      {!!currentAccount && (
         <TableTabs active={activeTab} isAdmin={isAdmin} />
-      </div>
+      )}
 
-      <section aria-labelledby="panel-heading" className="rounded-b-lg border border-t-0 border-border bg-surface p-6 shadow-sm">
+      <section aria-labelledby="panel-heading" className={`border border-border bg-surface p-6 shadow-sm ${!!currentAccount ? "rounded-b-lg border-t-0" : "rounded-lg"}`}>
         <h2 id="panel-heading" className="sr-only">
           {activeTab === "account" && "Account records"}
           {activeTab === "ingredient" && "Ingredient records"}

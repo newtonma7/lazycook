@@ -1,29 +1,31 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { useRouter } from "next/navigation";
 
-type Props = {
-    addMealPlanAndReturn: (formData: FormData) => Promise<{ meal_plan_id: number } | null>;
+type RecipeOption = {
+    recipe_id: number;
+    title: string;
 };
 
-export function NewMealPlanModal({ addMealPlanAndReturn }: Props) {
+type Props = {
+    meal_plan_id: number;
+    recipes: RecipeOption[];
+    addMealPlanItem: (formData: FormData) => Promise<void>;
+};
+
+export function AddMealPlanItemModal({ meal_plan_id, recipes, addMealPlanItem }: Props) {
     const [isOpen, setIsOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const formRef = useRef<HTMLFormElement>(null);
-    const router = useRouter();
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setIsLoading(true);
         try {
             const formData = new FormData(formRef.current!);
-            const result = await addMealPlanAndReturn(formData);
-            if (result) {
-                setIsOpen(false);
-                formRef.current?.reset();
-                router.push(`/dashboard?tab=meal_plan&plan=${result.meal_plan_id}`);
-            }
+            await addMealPlanItem(formData);
+            setIsOpen(false);
+            formRef.current?.reset();
         } finally {
             setIsLoading(false);
         }
@@ -33,16 +35,16 @@ export function NewMealPlanModal({ addMealPlanAndReturn }: Props) {
         <>
             <button
                 onClick={() => setIsOpen(true)}
-                className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+                className="rounded bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-1"
             >
-                New Meal Plan
+                Add Meal Plan Item
             </button>
 
             {isOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
                     <div className="w-full max-w-lg rounded-lg border border-zinc-200 bg-white p-6 shadow-lg">
                         <div className="mb-4 flex items-center justify-between">
-                            <h2 className="text-lg font-medium text-zinc-900">Add New Meal Plan</h2>
+                            <h2 className="text-lg font-medium text-zinc-900">Add Meal Plan Item</h2>
                             <button
                                 onClick={() => setIsOpen(false)}
                                 disabled={isLoading}
@@ -56,68 +58,81 @@ export function NewMealPlanModal({ addMealPlanAndReturn }: Props) {
                         </div>
 
                         <form ref={formRef} onSubmit={handleSubmit} className="grid gap-4">
+                            <input type="hidden" name="meal_plan_id" value={meal_plan_id} />
+                            <input type="hidden" name="redirect_plan_id" value={meal_plan_id} />
+
                             <div className="flex flex-col gap-1">
-                                <label htmlFor="mp-name" className="text-sm text-zinc-600">
-                                    Plan Name
+                                <label htmlFor="add-recipe" className="text-sm text-zinc-600">
+                                    Recipe
+                                </label>
+                                <select
+                                    id="add-recipe"
+                                    name="recipe_id"
+                                    required
+                                    disabled={isLoading}
+                                    defaultValue=""
+                                    className="rounded border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none disabled:opacity-50"
+                                >
+                                    <option value="" disabled>
+                                        Select recipe
+                                    </option>
+                                    {recipes.map((recipe) => (
+                                        <option key={recipe.recipe_id} value={recipe.recipe_id}>
+                                            {recipe.title}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="flex flex-col gap-1">
+                                <label htmlFor="add-date" className="text-sm text-zinc-600">
+                                    Scheduled Date
                                 </label>
                                 <input
-                                    id="mp-name"
-                                    name="plan_name"
-                                    type="text"
-                                    required
+                                    id="add-date"
+                                    name="scheduled_for"
+                                    type="date"
                                     disabled={isLoading}
                                     className="rounded border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none disabled:opacity-50"
                                 />
                             </div>
 
                             <div className="flex flex-col gap-1">
-                                <label htmlFor="mp-consumer" className="text-sm text-zinc-600">
-                                    Consumer ID
+                                <label htmlFor="add-meal-type" className="text-sm text-zinc-600">
+                                    Meal Type
                                 </label>
                                 <input
-                                    id="mp-consumer"
-                                    name="consumer_id"
+                                    id="add-meal-type"
+                                    name="meal_type"
+                                    type="text"
+                                    placeholder="e.g. Breakfast, Lunch, Dinner"
+                                    disabled={isLoading}
+                                    className="rounded border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none disabled:opacity-50"
+                                />
+                            </div>
+
+                            <div className="flex flex-col gap-1">
+                                <label htmlFor="add-servings" className="text-sm text-zinc-600">
+                                    Servings
+                                </label>
+                                <input
+                                    id="add-servings"
+                                    name="servings"
                                     type="number"
                                     min={1}
-                                    required
+                                    placeholder="Number of servings"
                                     disabled={isLoading}
                                     className="rounded border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none disabled:opacity-50"
                                 />
                             </div>
 
-                            <div className="flex flex-col gap-1">
-                                <label htmlFor="mp-start" className="text-sm text-zinc-600">
-                                    Start Date
-                                </label>
-                                <input
-                                    id="mp-start"
-                                    name="start_date"
-                                    type="date"
-                                    disabled={isLoading}
-                                    className="rounded border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none disabled:opacity-50"
-                                />
-                            </div>
-
-                            <div className="flex flex-col gap-1">
-                                <label htmlFor="mp-end" className="text-sm text-zinc-600">
-                                    End Date
-                                </label>
-                                <input
-                                    id="mp-end"
-                                    name="end_date"
-                                    type="date"
-                                    disabled={isLoading}
-                                    className="rounded border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none disabled:opacity-50"
-                                />
-                            </div>
-
-                            <div className="flex gap-2 pt-2">
+                            <div className="flex flex-wrap gap-2 pt-2">
                                 <button
                                     type="submit"
                                     disabled={isLoading}
-                                    className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 disabled:opacity-50"
+                                    className="rounded bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-1 disabled:opacity-50"
                                 >
-                                    {isLoading ? "Creating..." : "Create Meal Plan"}
+                                    {isLoading ? "Adding..." : "Add Item"}
                                 </button>
                                 <button
                                     type="button"

@@ -8,8 +8,11 @@ import {
     deleteMealPlanItem,
     updateMealPlan,
     updateMealPlanItem,
-} from "./actions";
+} from "../actions";
 import { NewMealPlanModal } from "./meal-plan-modal";
+import { EditMealPlanModal } from "./edit-meal-plan-modal";
+import { AddMealPlanItemModal } from "./add-meal-plan-item-modal";
+import { getCurrentAccount } from "../account-auth";
 
 export type MealPlanRow = {
     meal_plan_id: number;
@@ -80,6 +83,9 @@ function getRecipeName(recipeId: number, recipeTitleById: Map<number, string>) {
 
 export async function MealPlanPanel({ supabaseUrl, supabaseAnonKey, selectedPlanId }: Props) {
     const supabase = createClient(supabaseUrl, supabaseAnonKey);
+    const currentAccount = await getCurrentAccount();
+
+    const currentConsumerId = currentAccount?.role === "consumer" ? Number.parseInt(currentAccount.userId, 10) : null;
 
     const [
         { data: plansData, error: plansError },
@@ -89,6 +95,7 @@ export async function MealPlanPanel({ supabaseUrl, supabaseAnonKey, selectedPlan
         supabase
             .from("meal_plan")
             .select("meal_plan_id, consumer_id, plan_name, start_date, end_date")
+            .eq("consumer_id", currentConsumerId ?? -1)
             .order("meal_plan_id", { ascending: true }),
         supabase
             .from("meal_plan_item")
@@ -141,7 +148,7 @@ export async function MealPlanPanel({ supabaseUrl, supabaseAnonKey, selectedPlan
                         <h2 className="text-lg font-medium text-zinc-900">Meal Plans</h2>
                         <p className="mt-1 text-sm text-zinc-600">Select a plan to view and manage its details.</p>
                     </div>
-                    <NewMealPlanModal addMealPlanAndReturn={addMealPlanAndReturn} />
+                    {currentConsumerId && <NewMealPlanModal addMealPlanAndReturn={addMealPlanAndReturn} consumerId={currentConsumerId} />}
                 </div>
 
                 {sortedPlans.length === 0 ? (
@@ -214,142 +221,30 @@ export async function MealPlanPanel({ supabaseUrl, supabaseAnonKey, selectedPlan
                     <h2 className="text-lg font-semibold text-zinc-900">{selectedPlan.plan_name}</h2>
                     <p className="mt-1 text-sm text-zinc-600">{formatDateRange(selectedPlan.start_date, selectedPlan.end_date)}</p>
                 </div>
-                <Link
-                    href="/dashboard?tab=meal_plan"
-                    className="rounded border border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
-                >
-                    Back to all meal plans
-                </Link>
-            </div>
 
-            <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-6">
-                <h3 className="mb-4 text-base font-medium text-zinc-900">Meal plan details</h3>
-                <form action={updateMealPlan} className="grid gap-4 lg:grid-cols-2">
-                    <input type="hidden" name="meal_plan_id" value={selectedPlan.meal_plan_id} />
-                    <input type="hidden" name="redirect_plan_id" value={selectedPlan.meal_plan_id} />
-
-                    <div className="flex flex-col gap-1 lg:col-span-2">
-                        <label htmlFor="detail-plan-name" className="text-sm text-zinc-600">
-                            Plan Name
-                        </label>
-                        <input
-                            id="detail-plan-name"
-                            name="plan_name"
-                            type="text"
-                            required
-                            defaultValue={selectedPlan.plan_name}
-                            className="rounded border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-                        />
-                    </div>
-
-                    <div className="flex flex-col gap-1">
-                        <label htmlFor="detail-consumer-id" className="text-sm text-zinc-600">
-                            Consumer ID
-                        </label>
-                        <input
-                            id="detail-consumer-id"
-                            name="consumer_id"
-                            type="number"
-                            min={1}
-                            required
-                            defaultValue={selectedPlan.consumer_id ?? ""}
-                            className="rounded border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-                        />
-                    </div>
-
-                    <div className="flex flex-col gap-1">
-                        <label htmlFor="detail-start-date" className="text-sm text-zinc-600">
-                            Start Date
-                        </label>
-                        <input
-                            id="detail-start-date"
-                            name="start_date"
-                            type="date"
-                            defaultValue={selectedPlan.start_date ?? ""}
-                            className="rounded border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-                        />
-                    </div>
-
-                    <div className="flex flex-col gap-1">
-                        <label htmlFor="detail-end-date" className="text-sm text-zinc-600">
-                            End Date
-                        </label>
-                        <input
-                            id="detail-end-date"
-                            name="end_date"
-                            type="date"
-                            defaultValue={selectedPlan.end_date ?? ""}
-                            className="rounded border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-                        />
-                    </div>
-
-                    <div className="flex flex-wrap gap-2 lg:col-span-2">
-                        <button
-                            type="submit"
-                            className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
-                        >
-                            Save changes
-                        </button>
-                        <button
-                            type="submit"
-                            formAction={deleteMealPlan}
-                            className="rounded bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-1"
-                        >
-                            Delete meal plan
-                        </button>
-                    </div>
-                </form>
-            </div>
-
-            <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-6">
-                <h3 className="mb-4 text-base font-medium text-zinc-900">Add meal plan item</h3>
-                <form
-                    action={addMealPlanItem}
-                    className="grid gap-3 rounded-lg border border-zinc-200 bg-white p-4 lg:grid-cols-[minmax(180px,1.6fr)_minmax(120px,0.8fr)_minmax(120px,0.8fr)_minmax(100px,0.7fr)_auto]"
-                >
-                    <input type="hidden" name="meal_plan_id" value={selectedPlan.meal_plan_id} />
-                    <input type="hidden" name="redirect_plan_id" value={selectedPlan.meal_plan_id} />
-                    <select
-                        name="recipe_id"
-                        required
-                        defaultValue=""
-                        className="rounded border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                    <EditMealPlanModal
+                        meal_plan_id={selectedPlan.meal_plan_id}
+                        plan_name={selectedPlan.plan_name}
+                        start_date={selectedPlan.start_date}
+                        end_date={selectedPlan.end_date}
+                        updateMealPlan={updateMealPlan}
+                        deleteMealPlan={deleteMealPlan}
+                    />
+                    <Link
+                        href="/dashboard?tab=meal_plan"
+                        className="rounded border border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
                     >
-                        <option value="" disabled>
-                            Select recipe
-                        </option>
-                        {recipes.map((recipe) => (
-                            <option key={recipe.recipe_id} value={recipe.recipe_id}>
-                                {recipe.title} ({recipe.recipe_id})
-                            </option>
-                        ))}
-                    </select>
-                    <input
-                        name="scheduled_for"
-                        type="date"
-                        className="rounded border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-                    />
-                    <input
-                        name="meal_type"
-                        type="text"
-                        placeholder="Meal type"
-                        className="rounded border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-                    />
-                    <input
-                        name="servings"
-                        type="number"
-                        min={1}
-                        placeholder="Servings"
-                        className="rounded border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-                    />
-                    <button
-                        type="submit"
-                        className="rounded bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-1"
-                    >
-                        Add item
-                    </button>
-                </form>
+                        Back to All Meal Plans
+                    </Link>
+                </div>
             </div>
+
+            <AddMealPlanItemModal
+                meal_plan_id={selectedPlan.meal_plan_id}
+                recipes={recipes}
+                addMealPlanItem={addMealPlanItem}
+            />
 
             <div className="space-y-4">
                 <h3 className="text-base font-medium text-zinc-900">Meal plan items by date</h3>
@@ -395,7 +290,7 @@ export async function MealPlanPanel({ supabaseUrl, supabaseAnonKey, selectedPlan
                                                     >
                                                         {recipes.map((recipe) => (
                                                             <option key={recipe.recipe_id} value={recipe.recipe_id}>
-                                                                {recipe.title} ({recipe.recipe_id})
+                                                                {recipe.title}
                                                             </option>
                                                         ))}
                                                     </select>
