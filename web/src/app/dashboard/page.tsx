@@ -60,11 +60,12 @@ export default async function DashboardPage({ searchParams }: PageProps) {
 
   if (!supabaseUrl || !supabaseAnonKey) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[var(--color-parchment)] p-6">
-        <div className="max-w-md w-full bg-[var(--color-warm-surface)] p-8 rounded-3xl shadow-[0_4px_24px_rgba(44,36,32,0.08)] border border-[var(--color-warm-border)] text-center">
-          <AlertCircle className="w-12 h-12 text-[var(--color-terracotta)] mx-auto mb-4" />
-          <h1 className="font-[family-name:var(--font-display)] text-2xl mb-2 text-[var(--color-text-primary)]">Configuration Missing</h1>
-          <p className="text-[var(--color-text-secondary)] font-[family-name:var(--font-ui)] mb-6">Missing Supabase environment variables. Please check your .env files.</p>
+      <main className="flex min-h-screen items-center justify-center bg-[var(--color-cream)] p-6 font-[family-name:var(--font-body)]">
+        <div className="max-w-md w-full bg-[var(--color-surface)] p-10 rounded-[2.5rem] shadow-sm border border-[var(--color-border)] text-center relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-1 bg-[var(--color-tomato)]" />
+          <AlertCircle className="w-12 h-12 text-[var(--color-tomato)] mx-auto mb-6" />
+          <h1 className="font-[family-name:var(--font-display)] text-3xl mb-3 text-[var(--color-ink)]">Configuration Missing</h1>
+          <p className="text-[var(--color-ink-muted)] mb-8">Missing Supabase environment variables. Please check your .env files.</p>
         </div>
       </main>
     );
@@ -86,12 +87,12 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   const headerDescription = tabDescriptions[activeTab] || tabDescriptions["account"];
 
   return (
-    <div className="min-h-screen bg-[var(--color-parchment)] selection:bg-[var(--color-saffron-soft)] font-[family-name:var(--font-ui)]">
-      <header className="border-b border-[var(--color-warm-border)] bg-[var(--color-warm-surface)]/80 backdrop-blur-md sticky top-0 z-50">
+    <div className="min-h-screen bg-[var(--color-cream)] selection:bg-[var(--color-tomato)]/10 font-[family-name:var(--font-body)]">
+      <header className="border-b border-[var(--color-border-light)] bg-[var(--color-cream)]/80 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-8">
             <Link href="/" className="group flex items-center gap-2">
-              <span className="font-[family-name:var(--font-display)] text-2xl italic tracking-tighter text-[var(--color-text-primary)] group-hover:text-[var(--color-terracotta)] transition-colors">
+              <span className="font-[family-name:var(--font-display)] text-2xl italic tracking-tight text-[var(--color-ink)] group-hover:text-[var(--color-tomato)] transition-colors">
                 lazycook
               </span>
             </Link>
@@ -104,46 +105,48 @@ export default async function DashboardPage({ searchParams }: PageProps) {
           
           <Link
             href="/"
-            className="flex items-center gap-2 px-4 py-2 rounded-full border border-[var(--color-warm-border)] text-[var(--color-text-secondary)] text-xs tracking-wide hover:bg-[var(--color-text-primary)] hover:text-[var(--color-warm-surface)] hover:border-[var(--color-text-primary)] transition-all duration-300"
+            className="flex items-center gap-2 px-5 py-2 rounded-full border border-[var(--color-border)] text-[var(--color-ink-muted)] text-[11px] font-bold uppercase tracking-widest hover:bg-[var(--color-ink)] hover:text-[var(--color-cream)] hover:border-[var(--color-ink)] transition-all duration-300"
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft className="w-3.5 h-3.5" />
             <span>Back</span>
           </Link>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-6 py-6 animate-in fade-in slide-in-from-bottom-3 duration-500 ease-out">
-        <section className="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <Sparkles className="w-4 h-4 text-[var(--color-saffron)]" />
-              <span className="font-[family-name:var(--font-handwritten)] text-[var(--color-text-secondary)] text-[18px]">
-                your kitchen, this {timeContext}
-              </span>
+      <main className="max-w-7xl mx-auto px-6 py-10">
+        {/* Conditional rendering: Only show the page header if the user is authenticated */}
+        {!!currentAccount && (
+          <section className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-4 animate-in fade-in duration-700">
+            <div>
+              <div className="flex items-center gap-2 mb-0.5">
+                <Sparkles className="w-4 h-4 text-[var(--color-turmeric)]" />
+                <span className="font-[family-name:var(--font-display)] text-[24px] italic text-[var(--color-tomato)]">
+                  your kitchen, this {timeContext}
+                </span>
+              </div>
+              <h1 className="text-5xl md:text-6xl font-[family-name:var(--font-display)] text-[var(--color-ink)] leading-tight font-bold tracking-tight">
+                Hello{currentAccount?.userId ? `, Chef` : ''}.
+              </h1>
             </div>
-            <h1 className="text-3xl font-[family-name:var(--font-display)] text-[var(--color-text-primary)] leading-tight">
-              Hello{currentAccount?.userId ? `, Chef` : ''}.
-            </h1>
-          </div>
-          
-          <p className="text-[var(--color-text-secondary)] text-sm max-w-sm hidden md:block text-right">
-            {headerDescription}
-          </p>
-        </section>
+            
+            <p className="text-[var(--color-ink-muted)] text-base max-w-sm hidden md:block text-right italic">
+              {headerDescription}
+            </p>
+          </section>
+        )}
 
         <div className="relative">
-          {/* CRITICAL FIX: Added key={activeTab} to Suspense. This forces React to unmount the old component tree and boundary before streaming the new one, preventing RSC stream crashes during client-side tab navigation. */}
           <Suspense 
             key={activeTab} 
             fallback={
-              <div className="h-96 w-full bg-[var(--color-warm-surface)] rounded-2xl animate-pulse flex items-center justify-center border border-[var(--color-warm-border)]">
-                <Sparkles className="w-8 h-8 text-[var(--color-text-ghost)] animate-bounce" />
+              <div className="h-96 w-full bg-[var(--color-surface)] rounded-[2.5rem] animate-pulse flex items-center justify-center border border-[var(--color-border-light)]">
+                <Sparkles className="w-8 h-8 text-[var(--color-border)] animate-bounce" />
               </div>
             }
           >
             <section 
               aria-labelledby="panel-heading"
-              className="bg-[var(--color-warm-surface)] rounded-2xl shadow-[0_4px_24px_rgba(44,36,32,0.08)] border border-[var(--color-warm-border)] min-h-[500px] overflow-hidden transition-all duration-500"
+              className="min-h-[500px] transition-all duration-500"
             >
               <h2 id="panel-heading" className="sr-only">
                 {activeTab === "account" && "Account records"}
@@ -154,7 +157,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
                 {activeTab === "ai-recipe" && "AI Chef records"}
               </h2>
 
-              <div className="p-6 md:p-8">
+              <div className="w-full">
                 {activeTab === "account" && (
                   <AccountPanel message={messageStr} error={errorStr} currentAccount={currentAccount} />
                 )}
