@@ -49,7 +49,7 @@ async function requireSession() {
 }
 
 export async function signUpAccount(formData: FormData) {
-  const role = parseRole(formData.get("role"));
+  const role = parseRole(formData.get("role")) ?? "consumer";
   const username = normalizeUsername(formData.get("username"));
   const email = normalizeEmail(formData.get("email"));
   const password = normalizePassword(formData.get("password"));

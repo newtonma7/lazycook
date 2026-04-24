@@ -70,6 +70,37 @@
   --color-lemon:        #E8BE10;
   --color-border:       #DDD0BC;
   --color-border-light: #E8DFD0;
+
+  /* ── v3 token aliases (for the new AiRecipePanel & other components) ── */
+  --color-warm-surface:      var(--color-cream);
+  --color-warm-surface-2:    var(--color-linen);
+  --color-warm-border:       var(--color-border);
+  --color-warm-border-soft:  var(--color-border-light);
+
+  --color-text-primary:      var(--color-ink);
+  --color-text-secondary:    var(--color-ink-light);
+  --color-text-ghost:        var(--color-ink-muted);
+
+  /* Sage stays the same, but add a soft version */
+  --color-sage-soft:         #EBF5EC;  /* light sage tint */
+
+  /* New v3 accents — derived from existing palette */
+  --color-blush:             var(--color-peach);
+  --color-blush-soft:        #FDF0EE;  /* peach tint */
+  --color-butter:            var(--color-turmeric);
+  --color-butter-soft:       #FDF8EC;  /* butter tint */
+  --color-terracotta:        var(--color-tomato);
+  --color-terracotta-soft:   #FAEDE7;  /* terracotta tint */
+
+  /* Expiry urgency scale */
+  --color-fresh:             var(--color-sage);
+  --color-soon:              var(--color-butter);
+  --color-urgent:            var(--color-terracotta);
+
+  /* Ambient decorative (ghost colours for floating elements) */
+  --color-ambient-1:         rgba(74, 156, 87, 0.12);
+  --color-ambient-2:         rgba(232, 165, 152, 0.10);
+  --color-ambient-3:         rgba(232, 201, 122, 0.10);
 }
 
 /* ── Smooth scroll ── */
@@ -161,4 +192,12 @@ body::after {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
 }
