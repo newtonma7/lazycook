@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 
 type IngredientOption = { ingredient_id: number; name: string };
@@ -37,6 +38,12 @@ type Props = {
 
 export function RecipeGallery({ supabaseUrl, supabaseAnonKey, consumerId, ingredients }: Props) {
   const supabase = useMemo(() => createClient(supabaseUrl, supabaseAnonKey), [supabaseUrl, supabaseAnonKey]);
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  const backTo = searchParams.get("back");
+  const planId = searchParams.get("plan");
+  const recipeIdParam = searchParams.get("recipe");
 
   const [viewMode, setViewMode] = useState<"personal" | "public">("personal");
   const [recipes, setRecipes] = useState<Recipe[]>([]);
@@ -65,23 +72,33 @@ export function RecipeGallery({ supabaseUrl, supabaseAnonKey, consumerId, ingred
         .select(`*, recipe_ingredient (ingredient_id, required_quantity, unit, preparation_note, is_optional, ingredient (name))`)
         .order("created_at", { ascending: false });
 
-      query = viewMode === "personal" 
-        ? query.eq("consumer_id", consumerId) 
+      query = viewMode === "personal"
+        ? query.eq("consumer_id", consumerId)
         : query.eq("is_public", true).neq("consumer_id", consumerId);
 
       const { data, error } = await query;
-      if (!error && data) setRecipes(data as unknown as Recipe[]);
+      if (!error && data) {
+        setRecipes(data as unknown as Recipe[]);
+
+        // Auto-open recipe if recipe ID is in URL params
+        if (recipeIdParam) {
+          const recipe = (data as unknown as Recipe[]).find(r => r.recipe_id === Number(recipeIdParam));
+          if (recipe) {
+            setSelectedRecipe(recipe);
+          }
+        }
+      }
       setIsLoading(false);
     }
-    
+
     fetchRecipes();
-  }, [supabase, viewMode, consumerId]);
+  }, [supabase, viewMode, consumerId, recipeIdParam]);
 
   const displayRecipes = useMemo(() => {
     return recipes.filter(r => {
       const searchLower = searchQuery.toLowerCase();
-      const matchesSearch = !searchQuery || 
-        r.title.toLowerCase().includes(searchLower) || 
+      const matchesSearch = !searchQuery ||
+        r.title.toLowerCase().includes(searchLower) ||
         (r.description?.toLowerCase() || "").includes(searchLower) ||
         r.recipe_ingredient.some(ing => (ing.ingredient?.name || "").toLowerCase().includes(searchLower));
 
@@ -96,7 +113,7 @@ export function RecipeGallery({ supabaseUrl, supabaseAnonKey, consumerId, ingred
   const saveToMyKitchen = async (recipeToClone: Recipe) => {
     try {
       setIsProcessing(true);
-      
+
       const { data: newRecipe, error: recipeError } = await supabase
         .from("recipe")
         .insert({
@@ -107,7 +124,7 @@ export function RecipeGallery({ supabaseUrl, supabaseAnonKey, consumerId, ingred
           prep_time_min: recipeToClone.prep_time_min,
           cook_time_min: recipeToClone.cook_time_min,
           servings: recipeToClone.servings,
-          is_public: false 
+          is_public: false
         })
         .select("recipe_id")
         .single();
@@ -123,12 +140,12 @@ export function RecipeGallery({ supabaseUrl, supabaseAnonKey, consumerId, ingred
           preparation_note: ing.preparation_note,
           is_optional: ing.is_optional
         }));
-        
+
         const { error: ingError } = await supabase.from("recipe_ingredient").insert(newIngredients);
         if (ingError) throw ingError;
       }
 
-      setViewMode("personal"); 
+      setViewMode("personal");
     } catch (error) {
       console.error("Failed to clone recipe:", error);
     } finally {
@@ -167,7 +184,7 @@ export function RecipeGallery({ supabaseUrl, supabaseAnonKey, consumerId, ingred
       if (recipeError) throw recipeError;
 
       await supabase.from("recipe_ingredient").delete().eq("recipe_id", draft.recipe_id);
-      
+
       if (draft.recipe_ingredient.length > 0) {
         const mappedIngs = draft.recipe_ingredient.map(ing => ({
           recipe_id: draft.recipe_id,
@@ -237,32 +254,32 @@ export function RecipeGallery({ supabaseUrl, supabaseAnonKey, consumerId, ingred
           </div>
 
           <div className="flex-1 flex flex-col justify-center relative">
-             <div className="absolute -left-8 md:-left-16 top-0 text-[12rem] font-display font-bold text-cream/5 select-none leading-none pointer-events-none">
-               {cookStep + 1}
-             </div>
-             <p className="text-3xl md:text-5xl lg:text-6xl text-cream font-display leading-tight z-10">
-               {steps[cookStep].replace(/^[\d\.\)]+\s*/, '')}
-             </p>
+            <div className="absolute -left-8 md:-left-16 top-0 text-[12rem] font-display font-bold text-cream/5 select-none leading-none pointer-events-none">
+              {cookStep + 1}
+            </div>
+            <p className="text-3xl md:text-5xl lg:text-6xl text-cream font-display leading-tight z-10">
+              {steps[cookStep].replace(/^[\d\.\)]+\s*/, '')}
+            </p>
           </div>
 
           <div className="mt-12 flex justify-between items-center gap-4">
-            <button 
+            <button
               onClick={() => setCookStep(prev => Math.max(0, prev - 1))}
               disabled={cookStep === 0}
               className="px-8 py-5 rounded-2xl border border-cream/20 text-cream font-black uppercase tracking-widest text-xs disabled:opacity-20 hover:bg-cream/10 transition-all active:scale-95"
             >
               Previous
             </button>
-            
+
             {cookStep === steps.length - 1 ? (
-              <button 
+              <button
                 onClick={() => setCookingRecipe(null)}
                 className="flex-1 px-8 py-5 rounded-2xl bg-sage text-white font-black uppercase tracking-widest text-xs hover:bg-olive transition-all active:scale-95 shadow-lg shadow-sage/20"
               >
                 Bon Appétit (Finish)
               </button>
             ) : (
-              <button 
+              <button
                 onClick={() => setCookStep(prev => Math.min(steps.length - 1, prev + 1))}
                 className="flex-1 px-8 py-5 rounded-2xl bg-cream text-ink font-black uppercase tracking-widest text-xs hover:bg-white transition-all active:scale-95 shadow-lg"
               >
@@ -296,21 +313,21 @@ export function RecipeGallery({ supabaseUrl, supabaseAnonKey, consumerId, ingred
           </div>
 
           <div className="flex flex-col md:flex-row gap-4 items-center bg-white p-2 pl-4 rounded-2xl border border-border shadow-sm">
-             <div className="flex-1 flex items-center gap-3 w-full">
-                <span className="text-xl">🔍</span>
-                <input 
-                  type="text" 
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search for pasta, garlic, quick dinners..." 
-                  className="w-full bg-transparent outline-none text-sm placeholder:text-ink-muted/60 italic"
-                />
-             </div>
-             <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 scrollbar-none">
-                <button onClick={() => setActiveFilter("all")} className={`shrink-0 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeFilter === "all" ? "bg-ink text-cream" : "bg-cream text-ink-muted hover:bg-border-light"}`}>All</button>
-                <button onClick={() => setActiveFilter("quick")} className={`shrink-0 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeFilter === "quick" ? "bg-turmeric text-white shadow-md shadow-turmeric/20" : "bg-cream text-ink-muted hover:bg-border-light"}`}>&lt; 30 Mins</button>
-                <button onClick={() => setActiveFilter("simple")} className={`shrink-0 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeFilter === "simple" ? "bg-sage text-white shadow-md shadow-sage/20" : "bg-cream text-ink-muted hover:bg-border-light"}`}>5 Ingredients</button>
-             </div>
+            <div className="flex-1 flex items-center gap-3 w-full">
+              <span className="text-xl">🔍</span>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search for pasta, garlic, quick dinners..."
+                className="w-full bg-transparent outline-none text-sm placeholder:text-ink-muted/60 italic"
+              />
+            </div>
+            <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 scrollbar-none">
+              <button onClick={() => setActiveFilter("all")} className={`shrink-0 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeFilter === "all" ? "bg-ink text-cream" : "bg-cream text-ink-muted hover:bg-border-light"}`}>All</button>
+              <button onClick={() => setActiveFilter("quick")} className={`shrink-0 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeFilter === "quick" ? "bg-turmeric text-white shadow-md shadow-turmeric/20" : "bg-cream text-ink-muted hover:bg-border-light"}`}>&lt; 30 Mins</button>
+              <button onClick={() => setActiveFilter("simple")} className={`shrink-0 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeFilter === "simple" ? "bg-sage text-white shadow-md shadow-sage/20" : "bg-cream text-ink-muted hover:bg-border-light"}`}>5 Ingredients</button>
+            </div>
           </div>
         </div>
       )}
@@ -319,7 +336,7 @@ export function RecipeGallery({ supabaseUrl, supabaseAnonKey, consumerId, ingred
         <>
           {isLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[1,2,3,4,5,6].map(i => <div key={i} className="h-72 bg-white rounded-3xl border border-border-light animate-pulse" />)}
+              {[1, 2, 3, 4, 5, 6].map(i => <div key={i} className="h-72 bg-white rounded-3xl border border-border-light animate-pulse" />)}
             </div>
           ) : displayRecipes.length === 0 ? (
             <div className="text-center py-32 border-2 border-dashed border-border rounded-3xl bg-white shadow-sm">
@@ -335,14 +352,14 @@ export function RecipeGallery({ supabaseUrl, supabaseAnonKey, consumerId, ingred
                     <h3 className="font-display font-bold text-2xl text-ink leading-tight mb-3 group-hover:text-sage transition-colors">{recipe.title}</h3>
                     <p className="text-sm text-ink-muted italic line-clamp-3 leading-relaxed">"{recipe.description}"</p>
                   </div>
-                  
+
                   <div className="mt-8 pt-4 border-t border-border-light flex items-center justify-between">
                     <div className="flex gap-4">
                       <span className="text-[10px] font-black uppercase tracking-[0.15em] text-ink-light flex items-center gap-1.5">
                         <span className="text-turmeric text-sm">⏱</span> {(recipe.prep_time_min || 0) + (recipe.cook_time_min || 0)}m
                       </span>
                       <span className="text-[10px] font-black uppercase tracking-[0.15em] text-ink-light flex items-center gap-1.5">
-                         <span className="text-olive text-sm">🍽</span> {recipe.servings}
+                        <span className="text-olive text-sm">🍽</span> {recipe.servings}
                       </span>
                     </div>
                     {recipe.is_public && viewMode === "personal" && (
@@ -362,15 +379,25 @@ export function RecipeGallery({ supabaseUrl, supabaseAnonKey, consumerId, ingred
 
           <div className="flex items-center justify-between mb-10 relative z-10">
             {!isEditing ? (
-               <button onClick={() => setSelectedRecipe(null)} className="group flex items-center gap-2 text-[10px] font-black tracking-[0.2em] text-ink-muted hover:text-sage transition-colors uppercase">
-                 <span className="group-hover:-translate-x-1 transition-transform">←</span> Back to {viewMode === "personal" ? "Kitchen" : "Community"}
-               </button>
+              <button
+                onClick={() => {
+                  if (backTo === "meal_plan" && planId) {
+                    router.push(`/dashboard?tab=meal_plan&plan=${planId}`);
+                  } else {
+                    setSelectedRecipe(null);
+                  }
+                }}
+                className="group flex items-center gap-2 text-[10px] font-black tracking-[0.2em] text-ink-muted hover:text-sage transition-colors uppercase"
+              >
+                <span className="group-hover:-translate-x-1 transition-transform">←</span>
+                Back {backTo === "meal_plan" ? "to Meal Plan" : `to ${viewMode === "personal" ? "Kitchen" : "Community"}`}
+              </button>
             ) : (
-               <span className="text-[10px] font-black tracking-[0.2em] text-turmeric uppercase flex items-center gap-2 animate-pulse">
-                  <span className="h-2 w-2 rounded-full bg-turmeric"></span> Editing Mode
-               </span>
+              <span className="text-[10px] font-black tracking-[0.2em] text-turmeric uppercase flex items-center gap-2 animate-pulse">
+                <span className="h-2 w-2 rounded-full bg-turmeric"></span> Editing Mode
+              </span>
             )}
-            
+
             <div className="flex gap-3">
               {viewMode === "personal" ? (
                 !isEditing ? (
@@ -400,19 +427,19 @@ export function RecipeGallery({ supabaseUrl, supabaseAnonKey, consumerId, ingred
 
           <div className="mb-12 pb-10 border-b border-border-light relative z-10">
             {isEditing ? (
-               <input 
-                 value={draft?.title || ""} 
-                 onChange={e => handleDraftChange("title", e.target.value)} 
-                 className="text-4xl md:text-6xl font-display font-bold text-ink tracking-tight mb-6 w-full bg-cream/30 border-b-2 border-sage/50 focus:border-sage outline-none transition-colors px-2 py-1 rounded-t-lg"
-                 placeholder="Recipe Title"
-               />
+              <input
+                value={draft?.title || ""}
+                onChange={e => handleDraftChange("title", e.target.value)}
+                className="text-4xl md:text-6xl font-display font-bold text-ink tracking-tight mb-6 w-full bg-cream/30 border-b-2 border-sage/50 focus:border-sage outline-none transition-colors px-2 py-1 rounded-t-lg"
+                placeholder="Recipe Title"
+              />
             ) : (
               <h2 className="text-4xl md:text-6xl font-display font-bold text-ink tracking-tight mb-6">{displayRecipe.title}</h2>
             )}
 
             {isEditing ? (
-              <textarea 
-                value={draft?.description || ""} 
+              <textarea
+                value={draft?.description || ""}
                 onChange={e => handleDraftChange("description", e.target.value)}
                 className="text-xl text-ink-muted italic w-full leading-relaxed bg-cream/30 border-b-2 border-sage/50 focus:border-sage outline-none resize-none px-2 py-1 rounded-t-lg"
                 rows={2}
@@ -437,8 +464,8 @@ export function RecipeGallery({ supabaseUrl, supabaseAnonKey, consumerId, ingred
                   <input type="number" value={draft?.servings || 0} onChange={e => handleDraftChange("servings", parseInt(e.target.value))} className="w-16 bg-cream border border-border rounded-lg px-2 py-1 text-xs outline-none focus:border-sage" />
                 </div>
                 <div className="flex items-center gap-2 ml-auto">
-                   <label className="text-[10px] font-black uppercase tracking-widest text-ink-muted">Make Public</label>
-                   <input type="checkbox" checked={draft?.is_public || false} onChange={e => handleDraftChange("is_public", e.target.checked)} className="accent-sage w-4 h-4 cursor-pointer" />
+                  <label className="text-[10px] font-black uppercase tracking-widest text-ink-muted">Make Public</label>
+                  <input type="checkbox" checked={draft?.is_public || false} onChange={e => handleDraftChange("is_public", e.target.checked)} className="accent-sage w-4 h-4 cursor-pointer" />
                 </div>
               </div>
             )}
@@ -456,13 +483,13 @@ export function RecipeGallery({ supabaseUrl, supabaseAnonKey, consumerId, ingred
                       <span className="font-bold text-sm text-ink capitalize flex-1">
                         {ing.ingredient?.name || "Unknown"}
                         {isEditing ? (
-                          <input 
-                            value={ing.preparation_note || ""} 
+                          <input
+                            value={ing.preparation_note || ""}
                             onChange={e => {
-                               if(!draft) return;
-                               const newIngs = [...draft.recipe_ingredient];
-                               newIngs[idx].preparation_note = e.target.value;
-                               setDraft({...draft, recipe_ingredient: newIngs});
+                              if (!draft) return;
+                              const newIngs = [...draft.recipe_ingredient];
+                              newIngs[idx].preparation_note = e.target.value;
+                              setDraft({ ...draft, recipe_ingredient: newIngs });
                             }}
                             placeholder="Prep notes..."
                             className="block text-xs font-normal text-ink-muted italic mt-1 bg-transparent border-b border-dashed border-border focus:border-sage outline-none w-full max-w-[150px]"
@@ -475,25 +502,25 @@ export function RecipeGallery({ supabaseUrl, supabaseAnonKey, consumerId, ingred
                       <div className="flex items-center gap-2 ml-4">
                         {isEditing ? (
                           <>
-                            <input 
-                              value={ing.required_quantity || ""} 
+                            <input
+                              value={ing.required_quantity || ""}
                               onChange={e => {
-                                 if(!draft) return;
-                                 const newIngs = [...draft.recipe_ingredient];
-                                 newIngs[idx].required_quantity = e.target.value;
-                                 setDraft({...draft, recipe_ingredient: newIngs});
+                                if (!draft) return;
+                                const newIngs = [...draft.recipe_ingredient];
+                                newIngs[idx].required_quantity = e.target.value;
+                                setDraft({ ...draft, recipe_ingredient: newIngs });
                               }}
-                              placeholder="Qty" className="w-12 text-right text-xs font-black text-ink-light bg-transparent border-b border-dashed border-border focus:border-sage outline-none" 
+                              placeholder="Qty" className="w-12 text-right text-xs font-black text-ink-light bg-transparent border-b border-dashed border-border focus:border-sage outline-none"
                             />
-                            <input 
-                              value={ing.unit || ""} 
+                            <input
+                              value={ing.unit || ""}
                               onChange={e => {
-                                 if(!draft) return;
-                                 const newIngs = [...draft.recipe_ingredient];
-                                 newIngs[idx].unit = e.target.value;
-                                 setDraft({...draft, recipe_ingredient: newIngs});
+                                if (!draft) return;
+                                const newIngs = [...draft.recipe_ingredient];
+                                newIngs[idx].unit = e.target.value;
+                                setDraft({ ...draft, recipe_ingredient: newIngs });
                               }}
-                              placeholder="Unit" className="w-12 text-xs font-black text-ink-light bg-transparent border-b border-dashed border-border focus:border-sage outline-none" 
+                              placeholder="Unit" className="w-12 text-xs font-black text-ink-light bg-transparent border-b border-dashed border-border focus:border-sage outline-none"
                             />
                             <button onClick={() => removeDraftIngredient(idx)} className="ml-2 text-tomato opacity-50 hover:opacity-100 transition-opacity">
                               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
@@ -515,14 +542,14 @@ export function RecipeGallery({ supabaseUrl, supabaseAnonKey, consumerId, ingred
               <h5 className="font-black uppercase text-sage text-[10px] tracking-[0.3em] mb-8 flex items-center gap-3">
                 <span className="h-px w-6 bg-sage"></span> Preparation
               </h5>
-              
+
               {isEditing ? (
-                 <textarea 
-                    value={draft?.instructions || ""}
-                    onChange={e => handleDraftChange("instructions", e.target.value)}
-                    className="w-full h-[400px] text-lg leading-relaxed text-ink-light bg-cream/30 border-2 border-dashed border-border rounded-2xl p-6 focus:border-sage outline-none resize-y"
-                    placeholder="Enter instructions, separated by line breaks..."
-                 />
+                <textarea
+                  value={draft?.instructions || ""}
+                  onChange={e => handleDraftChange("instructions", e.target.value)}
+                  className="w-full h-[400px] text-lg leading-relaxed text-ink-light bg-cream/30 border-2 border-dashed border-border rounded-2xl p-6 focus:border-sage outline-none resize-y"
+                  placeholder="Enter instructions, separated by line breaks..."
+                />
               ) : (
                 <div className="space-y-10">
                   {formatInstructions(displayRecipe.instructions).map((step, idx) => (
@@ -538,7 +565,7 @@ export function RecipeGallery({ supabaseUrl, supabaseAnonKey, consumerId, ingred
                 </div>
               )}
             </div>
-            
+
           </div>
         </div>
       )}
