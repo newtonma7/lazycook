@@ -1,16 +1,16 @@
 // src/app/recipes/RecipeGallery.tsx
 "use client";
 
-import { useState, useMemo } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useMemo, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
+import { AnimatePresence } from "framer-motion";
 import { useRecipes } from "./hooks/useRecipes";
 import { useRecipeActions } from "./hooks/useRecipeActions";
 import { GalleryHeader } from "./components/GalleryHeader";
 import { RecipeGrid } from "./components/RecipeGrid";
 import { CookingMode } from "./components/CookingMode";
 import { RecipeDetail } from "./components/RecipeDetail";
-import type { IngredientOption, Recipe } from "./types";
-import type { ConsumerInfo } from "./types";
+import type { IngredientOption, Recipe, ConsumerInfo } from "./types";
 
 type Props = {
   supabaseUrl: string;
@@ -21,14 +21,20 @@ type Props = {
   consumers?: ConsumerInfo[];
 };
 
-export function RecipeGallery({ supabaseUrl, supabaseAnonKey, consumerId, ingredients, isAdmin = false }: Props) {
+export function RecipeGallery({ supabaseUrl, supabaseAnonKey, consumerId, ingredients, isAdmin = false, consumers = [] }: Props) {
+  const searchParams = useSearchParams();
+
+  // Deep‑link params
+  const backTo = searchParams.get("back");
+  const planId = searchParams.get("plan");
+  const recipeIdParam = searchParams.get("recipe");
+
   const [viewMode, setViewMode] = useState<"personal" | "public">(isAdmin ? "public" : "personal");
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState<"all" | "quick" | "simple">("all");
   const [cookingRecipe, setCookingRecipe] = useState<Recipe | null>(null);
 
-  // Admin user drill-down
   const [adminUserId, setAdminUserId] = useState<number | null>(null);
   const [adminMode, setAdminMode] = useState<"all" | "user">("all");
 
@@ -37,6 +43,14 @@ export function RecipeGallery({ supabaseUrl, supabaseAnonKey, consumerId, ingred
   );
 
   const { saveToMyKitchen, toggleRecipeVisibility, saveEdit, deleteRecipe } = useRecipeActions(supabaseUrl, supabaseAnonKey, consumerId);
+
+  // Auto‑select recipe from URL param once recipes are loaded
+  useEffect(() => {
+    if (recipeIdParam && recipes.length > 0) {
+      const recipe = recipes.find(r => r.recipe_id === Number(recipeIdParam));
+      if (recipe) setSelectedRecipe(recipe);
+    }
+  }, [recipeIdParam, recipes]);
 
   const filteredRecipes = useMemo(() => {
     return recipes.filter((r) => {
@@ -71,22 +85,22 @@ export function RecipeGallery({ supabaseUrl, supabaseAnonKey, consumerId, ingred
   };
 
   const handleDelete = async (recipeId: number) => {
-  try {
-    await deleteRecipe(recipeId);
-    setRecipes((prev) => prev.filter(r => r.recipe_id !== recipeId));
-    setSelectedRecipe(null);
-  } catch (error) {
-    console.error("Delete failed", error);
-  }
-};
+    try {
+      await deleteRecipe(recipeId);
+      setRecipes((prev) => prev.filter(r => r.recipe_id !== recipeId));
+      setSelectedRecipe(null);
+    } catch (error) {
+      console.error("Delete failed", error);
+    }
+  };
 
-  const isOwner = !isAdmin && consumerId !== null; // consumer always owns their recipes
+  const isOwner = !isAdmin && consumerId !== null;
 
   return (
     <div className="font-[family-name:var(--font-body)] text-[var(--color-ink)] animate-in fade-in duration-700 w-full relative">
       <AnimatePresence mode="wait">
         {!selectedRecipe && (
-          <motion.div key="grid" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+          <div key="grid">
             <GalleryHeader
               isAdmin={isAdmin}
               viewMode={viewMode}
@@ -103,7 +117,7 @@ export function RecipeGallery({ supabaseUrl, supabaseAnonKey, consumerId, ingred
               showVisibilityIcons={!isAdmin && viewMode === "personal"}
               onRecipeClick={setSelectedRecipe}
             />
-          </motion.div>
+          </div>
         )}
 
         {selectedRecipe && !cookingRecipe && (
@@ -116,8 +130,10 @@ export function RecipeGallery({ supabaseUrl, supabaseAnonKey, consumerId, ingred
             onSaveToMyKitchen={saveToMyKitchen}
             onToggleVisibility={handleToggleVisibility}
             onSaveEdit={handleSaveEdit}
-            consumerId={consumerId}
             onDelete={handleDelete}
+            consumerId={consumerId}
+            backTo={backTo ?? undefined}
+            planId={planId ?? undefined}
           />
         )}
       </AnimatePresence>

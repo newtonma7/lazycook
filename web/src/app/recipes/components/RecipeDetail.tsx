@@ -1,8 +1,10 @@
 // src/app/recipes/components/RecipeDetail.tsx
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { ArrowLeft, Pen, Play, Globe, Lock, Trash2 } from "lucide-react";
+import { ArrowLeft, Pen, Play, Globe, Lock, Trash2, X } from "lucide-react";
 import type { Recipe } from "../types";
+import { BasilIdle } from "../../components/mascot/BasilComponents";
 
 const FloatingEmoticon = ({ emoji, delay = 0, x = "0%", y = "0%" }: any) => (
   <motion.span
@@ -27,6 +29,8 @@ type Props = {
   onSaveEdit: (draft: Recipe) => Promise<void>;
   onDelete: (recipeId: number) => Promise<void>;
   consumerId: number | null;
+  backTo?: string;
+  planId?: string;
 };
 
 function formatInstructions(text: string | null) {
@@ -44,7 +48,10 @@ export function RecipeDetail({
   onSaveEdit,
   onDelete,
   consumerId,
+  backTo,
+  planId,
 }: Props) {
+  const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState<Recipe | null>(null);
 
@@ -71,20 +78,40 @@ export function RecipeDetail({
     await onToggleVisibility(displayRecipe);
   };
 
+  const removeDraftIngredient = (index: number) => {
+    if (!draft) return;
+    const newIngs = [...draft.recipe_ingredient];
+    newIngs.splice(index, 1);
+    setDraft({ ...draft, recipe_ingredient: newIngs });
+  };
+
+  const handleBack = () => {
+    if (backTo === "meal_plan" && planId) {
+      router.push(`/dashboard?tab=meal_plan&plan=${planId}`);
+    } else {
+      onBack();
+    }
+  };
+
   return (
     <motion.div key="detail" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} className="relative">
+      {/* Basil napping – discovered, not forced */}
+      <div className="absolute bottom-3 right-3 opacity-25 hover:opacity-50 transition-opacity duration-500 pointer-events-none">
+        <BasilIdle size={50} />
+      </div>
+
       <header className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[var(--color-border-light)] pb-6">
         <button
-          onClick={onBack}
+          onClick={handleBack}
           className="group flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-muted)] hover:text-[var(--color-tomato)] transition-colors cursor-pointer"
         >
-          <ArrowLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-1" /> Back to Archive
+          <ArrowLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-1" /> Back {backTo === "meal_plan" ? "to Meal Plan" : "to Archive"}
         </button>
 
         <div className="flex items-center gap-2">
           {isOwner && !isEditing && (
             <>
-              {/* ── Visibility Toggle ── */}
+              {/* Visibility Toggle */}
               <button
                 onClick={handleToggle}
                 className="flex items-center gap-1.5 px-4 py-2 rounded-full border text-[9px] font-bold uppercase tracking-widest transition-all cursor-pointer"
@@ -105,20 +132,26 @@ export function RecipeDetail({
                 )}
               </button>
 
-              {/* ── Edit ── */}
-              <button onClick={startEditing} className="px-5 py-2 rounded-full border border-[var(--color-border)] text-[9px] font-bold uppercase tracking-widest hover:border-[var(--color-ink)] transition-all cursor-pointer">
+              {/* Edit */}
+              <button
+                onClick={startEditing}
+                className="px-5 py-2 rounded-full border border-[var(--color-border)] text-[9px] font-bold uppercase tracking-widest hover:border-[var(--color-ink)] transition-all cursor-pointer"
+              >
                 <Pen className="w-2.5 h-2.5 inline mr-1" /> Edit
               </button>
 
-              {/* ── Start Cooking (primary) ── */}
-              <button onClick={() => onStartCooking(displayRecipe)} className="px-6 py-2 rounded-full bg-[var(--color-ink)] text-[var(--color-cream)] text-[9px] font-bold uppercase tracking-widest hover:bg-[var(--color-tomato)] transition-all cursor-pointer flex items-center gap-1.5">
+              {/* Start Cooking */}
+              <button
+                onClick={() => onStartCooking(displayRecipe)}
+                className="px-6 py-2 rounded-full bg-[var(--color-ink)] text-[var(--color-cream)] text-[9px] font-bold uppercase tracking-widest hover:bg-[var(--color-tomato)] transition-all cursor-pointer flex items-center gap-1.5"
+              >
                 <Play className="w-2.5 h-2.5 fill-current" /> Start Cooking
               </button>
 
-              {/* ── Divider ── */}
+              {/* Divider */}
               <span className="text-[var(--color-border-light)] mx-1 opacity-40 select-none">|</span>
 
-              {/* ── Delete (danger, subtly placed) ── */}
+              {/* Delete */}
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -159,32 +192,66 @@ export function RecipeDetail({
         <div className="lg:col-span-4 space-y-6">
           <div className="bg-[var(--color-surface)] rounded-[2rem] p-6 border border-[var(--color-border)] relative overflow-hidden">
             <FloatingEmoticon emoji="🌿" x="80%" y="10%" delay={1} />
-            <h4 className="font-[family-name:var(--font-display)] text-2xl italic text-[var(--color-tomato)] mb-6">
-              mise en place
-            </h4>
+            <h4 className="font-[family-name:var(--font-display)] text-2xl italic text-[var(--color-tomato)] mb-6">mise en place</h4>
             <ul className="space-y-4">
               {displayRecipe.recipe_ingredient.map((ing, idx) => (
                 <li key={idx} className="flex justify-between items-baseline border-b border-[var(--color-border-light)] pb-3 last:border-0 group">
                   <div className="flex flex-col flex-1">
                     <span className="font-bold text-[14px] text-[var(--color-ink)] capitalize">{ing.ingredient?.name}</span>
                     {isEditing ? (
-                      <input
-                        value={ing.preparation_note || ""}
-                        onChange={(e) => {
-                          if (!draft) return;
-                          const newIngs = [...draft.recipe_ingredient];
-                          newIngs[idx] = { ...newIngs[idx], preparation_note: e.target.value };
-                          setDraft({ ...draft, recipe_ingredient: newIngs });
-                        }}
-                        className="text-[10px] italic bg-transparent border-b border-dashed border-[var(--color-border)] outline-none focus:border-[var(--color-tomato)] mt-0.5"
-                      />
+                      <div className="flex flex-col gap-1 mt-1">
+                        <input
+                          value={ing.preparation_note || ""}
+                          onChange={e => {
+                            if (!draft) return;
+                            const newIngs = [...draft.recipe_ingredient];
+                            newIngs[idx].preparation_note = e.target.value;
+                            setDraft({ ...draft, recipe_ingredient: newIngs });
+                          }}
+                          placeholder="Prep notes..."
+                          className="text-[10px] italic bg-transparent border-b border-dashed border-[var(--color-border)] outline-none focus:border-[var(--color-tomato)]"
+                        />
+                        <div className="flex items-center gap-2 mt-1">
+                          <input
+                            value={ing.required_quantity || ""}
+                            onChange={e => {
+                              if (!draft) return;
+                              const newIngs = [...draft.recipe_ingredient];
+                              newIngs[idx].required_quantity = e.target.value;
+                              setDraft({ ...draft, recipe_ingredient: newIngs });
+                            }}
+                            placeholder="Qty"
+                            className="w-16 text-right text-xs font-bold bg-transparent border-b border-dashed border-[var(--color-border)] outline-none focus:border-[var(--color-tomato)]"
+                          />
+                          <input
+                            value={ing.unit || ""}
+                            onChange={e => {
+                              if (!draft) return;
+                              const newIngs = [...draft.recipe_ingredient];
+                              newIngs[idx].unit = e.target.value;
+                              setDraft({ ...draft, recipe_ingredient: newIngs });
+                            }}
+                            placeholder="Unit"
+                            className="w-16 text-xs font-bold bg-transparent border-b border-dashed border-[var(--color-border)] outline-none focus:border-[var(--color-tomato)]"
+                          />
+                          <button
+                            onClick={() => removeDraftIngredient(idx)}
+                            className="ml-2 text-[var(--color-tomato)] opacity-50 hover:opacity-100 transition-opacity"
+                            title="Remove ingredient"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
                     ) : (
                       <span className="text-[11px] text-[var(--color-ink-muted)] italic">{ing.preparation_note}</span>
                     )}
                   </div>
-                  <span className="text-[12px] font-[family-name:var(--font-mono)] font-medium text-[var(--color-ink-muted)]">
-                    {ing.required_quantity} {ing.unit}
-                  </span>
+                  {!isEditing && (
+                    <span className="text-[12px] font-[family-name:var(--font-mono)] font-medium text-[var(--color-ink-muted)]">
+                      {ing.required_quantity} {ing.unit}
+                    </span>
+                  )}
                 </li>
               ))}
             </ul>
@@ -196,8 +263,8 @@ export function RecipeDetail({
           <div>
             {isEditing ? (
               <input
-                value={draft?.title}
-                onChange={(e) => setDraft({ ...draft!, title: e.target.value })}
+                value={draft?.title || ""}
+                onChange={(e) => setDraft(draft ? { ...draft, title: e.target.value } : null)}
                 className="text-4xl md:text-5xl font-[family-name:var(--font-display)] font-bold bg-transparent border-b border-[var(--color-border)] w-full outline-none focus:border-[var(--color-tomato)] mb-4 py-1.5"
               />
             ) : (
@@ -208,7 +275,7 @@ export function RecipeDetail({
             {isEditing ? (
               <textarea
                 value={draft?.description || ""}
-                onChange={(e) => setDraft({ ...draft!, description: e.target.value })}
+                onChange={(e) => setDraft(draft ? { ...draft, description: e.target.value } : null)}
                 className="text-xl italic text-[var(--color-ink-muted)] bg-transparent border-b border-[var(--color-border)] w-full outline-none focus:border-[var(--color-tomato)] py-1.5 min-h-[80px]"
               />
             ) : (
@@ -216,16 +283,29 @@ export function RecipeDetail({
                 "{displayRecipe.description}"
               </p>
             )}
+
+            {/* Public checkbox in edit mode */}
+            {isEditing && draft && (
+              <div className="mt-4 flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  checked={draft.is_public}
+                  onChange={(e) => setDraft({ ...draft, is_public: e.target.checked })}
+                  className="w-4 h-4 rounded border-[var(--color-border)] text-[var(--color-sage)] focus:ring-[var(--color-sage)]"
+                />
+                <label className="text-sm text-[var(--color-ink-light)]">
+                  Make this recipe public <span className="text-[var(--color-ink-muted)]">(shared with the community)</span>
+                </label>
+              </div>
+            )}
           </div>
 
           <div className="space-y-8 border-t border-[var(--color-border-light)] pt-8">
-            <h4 className="text-[9px] font-bold uppercase tracking-[0.3em] text-[var(--color-ink-muted)] mb-6">
-              Method
-            </h4>
+            <h4 className="text-[9px] font-bold uppercase tracking-[0.3em] text-[var(--color-ink-muted)] mb-6">Method</h4>
             {isEditing ? (
               <textarea
                 value={draft?.instructions || ""}
-                onChange={(e) => setDraft({ ...draft!, instructions: e.target.value })}
+                onChange={(e) => setDraft(draft ? { ...draft, instructions: e.target.value } : null)}
                 className="w-full min-h-[300px] text-lg leading-relaxed bg-transparent border-l-2 border-dashed border-[var(--color-border)] pl-6 outline-none focus:border-[var(--color-tomato)]"
               />
             ) : (
