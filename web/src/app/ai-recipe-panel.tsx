@@ -18,7 +18,7 @@ interface PantryOption {
   pantry_name: string;
 }
 
-export function AiRecipePanel({ supabaseUrl, supabaseAnonKey }: { supabaseUrl: string; supabaseAnonKey: string }) {
+export function AiRecipePanel({ supabaseUrl, supabaseAnonKey, consumerId, adminId }: { supabaseUrl: string; supabaseAnonKey: string; consumerId: number | null, adminId: number | null }) {
   const supabase = useMemo(() => createClient(supabaseUrl, supabaseAnonKey), [supabaseUrl, supabaseAnonKey]);
 
   // States
@@ -174,8 +174,8 @@ export function AiRecipePanel({ supabaseUrl, supabaseAnonKey }: { supabaseUrl: s
       const { data: newRecipe, error: recipeError } = await supabase
         .from("recipe")
         .insert({
-          consumer_id: 1, // UPDATE THIS WITH YOUR ACTUAL USER ID
-          admin_id: 1,    // UPDATE THIS WITH YOUR ACTUAL ADMIN ID
+          consumer_id: consumerId,
+          admin_id: adminId,
           title: recipe.title,
           description: recipe.description,
           instructions: formattedInstructions,
@@ -240,8 +240,8 @@ export function AiRecipePanel({ supabaseUrl, supabaseAnonKey }: { supabaseUrl: s
             ingredient_id: ingredientId,
             required_quantity: parsedQty,
             unit: parsedUnit,
-            is_optional: false, // You could write logic to flag things as optional if desired
-            preparation_note: parsedName // Saving the AI's exact phrase (e.g. "Toasted Pine Nuts") as a prep note
+            is_optional: false,
+            preparation_note: parsedName
           });
         }
       }
@@ -344,7 +344,7 @@ const avoidanceContext = isAppending && recipes.length > 0
       - ADAPTABILITY: Let the dish dictate the flavor. We want intense, fulfilling, and highly accessible flavor profiles tailored perfectly to the specific recipe.`
       : "";
 
-    const prompt = `
+const prompt = `
       [ROLE] Michelin-Star Chef & Precision Culinary Architect.
       [GOAL] Craft EXACTLY ${numRecipes} completely distinct recipes using: ${selectedIngredients.join(", ")}.${avoidanceContext}${chefDirection}
       
@@ -357,10 +357,11 @@ const avoidanceContext = isAppending && recipes.length > 0
       [PRECISION MEASUREMENTS & ATOMIZATION] 
       - Every item MUST have specific counts/volumes (e.g. '3 Carrots', '2 tbsp'). Mathematically scale for ${quantityLabels[quantity]}.
       - SEPARATE INGREDIENTS: NEVER group ingredients. Write '1 tsp Salt' and '1 tsp Black Pepper' as two completely separate array items. Combining items like "Salt and Pepper" into one string is strictly forbidden.
+      - BASE INGREDIENT NOMENCLATURE: Absolutely NO descriptive adjectives or prep instructions in the ingredient arrays. Write '1 tbsp Lime Juice' (NOT 'Fresh Lime Juice'). Write '1 cup Onion' (NOT 'Diced Red Onion'). Save the preparation state (diced, fresh, toasted, melted) EXCLUSIVELY for the 'instructions' array.
       
       [INGREDIENT RULES: SORTING VS. LIMITING & DERIVATIVES]
       - SORTING: 'pantryIngredients' gets the items explicitly found in this list: ${selectedIngredients.join(", ")}. 
-      - THE DERIVATIVE RULE: If you use a processed form or specific part of a pantry item (e.g., 'Broccoli florets' or 'Chopped Broccoli' instead of just 'Broccoli'), it STILL belongs in 'pantryIngredients'. Do NOT put derivative forms in 'additionalIngredients'.
+      - THE DERIVATIVE RULE: Even if you are utilizing a specific part of a pantry item in the instructions (like the florets of a broccoli), you must list the raw base name exactly as it appears (e.g., 'Broccoli') in 'pantryIngredients'. Do NOT put derivative forms in 'additionalIngredients'.
       - 'additionalIngredients' gets EVERYTHING else (including staples).
       - LIMITING: Your limit is dictated ONLY by the Flexibility Rule. 
       - NEGATIVE LIST: NEVER use: ${excludedIngredients.join(", ") || "None"}.

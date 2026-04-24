@@ -18,6 +18,8 @@ type PageProps = {
 export default async function DashboardPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const currentAccount = await getCurrentAccount();
+  const consumerId = currentAccount?.role === "consumer" ? Number(currentAccount.userId) : null;
+  const adminId = currentAccount?.role === "admin" ? Number(currentAccount.userId) : null;
   const isAdmin = currentAccount?.role === "admin";
   const parsedPlanId = params.plan ? Number.parseInt(params.plan, 10) : NaN;
   const selectedMealPlanId = Number.isFinite(parsedPlanId) && parsedPlanId > 0 ? parsedPlanId : null;
@@ -100,7 +102,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
           />
         )}
         {activeTab === "ai-recipe" && (
-          <AiRecipePanel supabaseUrl={supabaseUrl} supabaseAnonKey={supabaseAnonKey} />
+          <AiRecipePanel supabaseUrl={supabaseUrl} supabaseAnonKey={supabaseAnonKey} consumerId={consumerId} adminId={adminId} />
         )}
       </section>
     </main>
