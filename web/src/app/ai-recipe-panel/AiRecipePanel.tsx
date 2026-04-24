@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { createClient } from "@supabase/supabase-js";
+import { Sparkles, ChefHat, Refrigerator, Settings2, Search, Plus, X, Save, ArrowLeft, Clock } from "lucide-react";
 
 interface Recipe {
   id: number;
@@ -757,8 +758,16 @@ const prompt = `
           )}
 
           {!isGenerating && !selectedRecipe && recipes.length === 0 && (
-            <div className="text-center py-32 border-2 border-dashed border-zinc-200 rounded-3xl bg-white shadow-sm">
-              <p className="text-zinc-400 font-black uppercase tracking-[0.3em] text-[10px]">Awaiting Selection</p>
+            <div className="flex flex-col items-center justify-center py-32 border-2 border-dashed border-zinc-200 rounded-[3rem] bg-zinc-50/50">
+              <div className="bg-white w-20 h-20 rounded-[2rem] flex items-center justify-center shadow-sm border border-zinc-100 mb-8">
+                <ChefHat className="w-10 h-10 text-amber-500/40" />
+              </div>
+              <h3 className="font-serif text-5xl text-zinc-900 mb-6 text-center">
+                The kitchen is a <span className="italic underline decoration-amber-500/30 underline-offset-8">blank canvas.</span>
+              </h3>
+              <p className="text-zinc-500 text-lg max-w-sm mx-auto text-center leading-relaxed">
+                Adjust your dials and select produce to begin your personalized draft.
+              </p>
             </div>
           )}
         </div>

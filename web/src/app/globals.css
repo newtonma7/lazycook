@@ -1,127 +1,162 @@
 @import "tailwindcss";
 
 /* ═══════════════════════════════════════════════════════
-   LAZYCOOK — "Market Fresh" Design System
-   Minimalistic serif · Playful · Organic produce palette
+   LAZYCOOK — "The Atelier" Design System v2
+   Warm artisan · Editorial serif · Pantry-first kitchen companion
    ═══════════════════════════════════════════════════════ */
 
 @theme inline {
-  /* ── Backgrounds ── */
-  --color-cream: #FBF7F0;
-  --color-linen: #F3ECE0;
-  --color-parchment: #EDE4D3;
-  --color-surface: #F7F2E9;
+  /* ── Backgrounds — warmer, richer depth ── */
+  --color-cream:      #FAF7F2;   /* page base — parchment warmth */
+  --color-linen:      #F4EDE0;   /* hover surfaces */
+  --color-parchment:  #EDE3D0;   /* borders, slider tracks */
+  --color-surface:    #F7F1E8;   /* input fills, card insets */
 
-  /* ── Text ── */
-  --color-ink: #2A2118;
-  --color-ink-light: #5C4F3D;
-  --color-ink-muted: #8B7D6B;
+  /* ── Text — deeper, warmer ink ── */
+  --color-ink:        #1C1917;   /* primary — near-black charcoal */
+  --color-ink-light:  #57493A;   /* body copy */
+  --color-ink-muted:  #8C7D6A;   /* metadata, labels */
 
-  /* ── Produce-inspired accents (vivid) ── */
-  --color-tomato: #E8432B;
-  --color-sage: #4DAF5C;
-  --color-turmeric: #E5A813;
-  --color-eggplant: #8B3FA0;
-  --color-peach: #F7935E;
-  --color-berry: #D1366E;
-  --color-olive: #8AAD42;
-  --color-lemon: #F0CA15;
+  /* ── Primary brand — Terracotta replaces tomato as the anchor ── */
+  --color-tomato:     #C1440E;   /* terracotta — primary CTA, brand moment */
+  --color-peach:      #E8895A;   /* warm secondary highlight */
 
-  /* ── Borders ── */
-  --color-border: #DDD3C2;
-  --color-border-light: #E8E0D2;
+  /* ── Kitchen palette — produce-inspired accents ── */
+  --color-sage:       #4A9C57;   /* fresh / success / health */
+  --color-turmeric:   #D9980F;   /* warmth / quantity / badges */
+  --color-eggplant:   #7A3890;   /* accent for "creative" states */
+  --color-berry:      #C23068;   /* bold accent */
+  --color-olive:      #7A9C3A;   /* secondary green */
+  --color-lemon:      #E8BE10;   /* bright accent */
+
+  /* ── Borders — warm not cold ── */
+  --color-border:       #DDD0BC;
+  --color-border-light: #E8DFD0;
 
   /* ── Typography ── */
-  --font-display: var(--font-cormorant-garamond), "Georgia", serif;
-  --font-body: var(--font-lora), "Georgia", serif;
+  --font-display: var(--font-cormorant-garamond), "Playfair Display", "Georgia", serif;
+  --font-body:    var(--font-lora), "Georgia", serif;
 
-  /* ── Animations ── */
-  --animate-fade-in: fade-in 0.8s ease-out both;
-  --animate-slide-up: slide-up 0.8s ease-out both;
-  --animate-blob: blob 12s ease-in-out infinite;
-  --animate-float: float 6s ease-in-out infinite;
-  --animate-marquee: marquee 60s linear infinite;
-  --animate-breathe: breathe 4s ease-in-out infinite;
-  --animate-slide-in-right: slide-in-right 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+  /* ── Animation tokens ── */
+  --animate-fade-in:       fade-in 0.7s ease-out both;
+  --animate-slide-up:      slide-up 0.7s ease-out both;
+  --animate-blob:          blob 14s ease-in-out infinite;
+  --animate-float:         float 6s ease-in-out infinite;
+  --animate-marquee:       marquee 55s linear infinite;
+  --animate-breathe:       breathe 4s ease-in-out infinite;
+  --animate-slide-in-right: slide-in-right 0.38s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+/* ── CSS custom properties (for non-Tailwind consumers) ── */
 :root {
-  --background: #FBF7F0;
-  --foreground: #2A2118;
+  --background: #FAF7F2;
+  --foreground: #1C1917;
+
+  /* Expose all design tokens as standard CSS variables */
+  --color-cream:        #FAF7F2;
+  --color-linen:        #F4EDE0;
+  --color-parchment:    #EDE3D0;
+  --color-surface:      #F7F1E8;
+  --color-ink:          #1C1917;
+  --color-ink-light:    #57493A;
+  --color-ink-muted:    #8C7D6A;
+  --color-tomato:       #C1440E;
+  --color-peach:        #E8895A;
+  --color-sage:         #4A9C57;
+  --color-turmeric:     #D9980F;
+  --color-eggplant:     #7A3890;
+  --color-berry:        #C23068;
+  --color-olive:        #7A9C3A;
+  --color-lemon:        #E8BE10;
+  --color-border:       #DDD0BC;
+  --color-border-light: #E8DFD0;
 }
 
+/* ── Smooth scroll ── */
 html {
   scroll-behavior: smooth;
 }
 
-@keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes slide-up {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes blob {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  33% { transform: translate(30px, -25px) scale(1.04); }
-  66% { transform: translate(-20px, 18px) scale(0.96); }
-}
-
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-8px); }
-}
-
-@keyframes scroll-hint {
-  0%, 100% { opacity: 0.3; transform: translateY(0); }
-  50% { opacity: 0.8; transform: translateY(4px); }
-}
-
-@keyframes breathe {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.025); }
-}
-
-@keyframes slide-in-right {
-  from { transform: translateX(100%); }
-  to { transform: translateX(0); }
-}
-
-@keyframes marquee {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
-}
-
+/* ── Base body ── */
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
+/* ── Grain overlay — artisan texture ── */
 body::after {
   content: '';
   position: fixed;
   inset: 0;
   z-index: 9999;
   pointer-events: none;
-  opacity: 0.028;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.032;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   background-repeat: repeat;
   background-size: 256px 256px;
 }
 
+/* ── Selection ── */
+::selection {
+  background: rgba(193, 68, 14, 0.18);
+  color: var(--color-ink);
+}
+
+/* ── Horizontal fade mask for carousels ── */
 .mask-x {
   mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
   -webkit-mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
 }
 
+/* ─── Keyframes ─────────────────────────────────────────── */
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(22px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes blob {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%       { transform: translate(28px, -22px) scale(1.05); }
+  66%       { transform: translate(-18px, 16px) scale(0.96); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-9px); }
+}
+
+@keyframes breathe {
+  0%, 100% { transform: scale(1); }
+  50%       { transform: scale(1.028); }
+}
+
+@keyframes slide-in-right {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
+}
+
+@keyframes marquee {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+@keyframes scroll-hint {
+  0%, 100% { opacity: 0.3; transform: translateY(0); }
+  50%       { opacity: 0.7; transform: translateY(5px); }
+}
+
+/* ── Reduced motion ── */
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
+  *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
