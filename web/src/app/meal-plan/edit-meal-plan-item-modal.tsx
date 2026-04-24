@@ -101,7 +101,7 @@ export function EditMealPlanItemModal({
                                     required
                                     disabled={isLoading}
                                     defaultValue={String(recipe_id)}
-                                    className="rounded border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none disabled:opacity-50"
+                                    className="w-full rounded border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none disabled:opacity-50"
                                 >
                                     {recipes.map((recipe) => (
                                         <option key={recipe.recipe_id} value={recipe.recipe_id}>
@@ -121,7 +121,7 @@ export function EditMealPlanItemModal({
                                     type="date"
                                     disabled={isLoading}
                                     defaultValue={scheduled_for ?? ""}
-                                    className="rounded border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none disabled:opacity-50"
+                                    className="w-full rounded border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none disabled:opacity-50"
                                 />
                             </div>
 
@@ -135,7 +135,7 @@ export function EditMealPlanItemModal({
                                     type="text"
                                     disabled={isLoading}
                                     defaultValue={meal_type ?? ""}
-                                    className="rounded border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none disabled:opacity-50"
+                                    className="w-full rounded border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none disabled:opacity-50"
                                 />
                             </div>
 
@@ -150,7 +150,7 @@ export function EditMealPlanItemModal({
                                     min={1}
                                     disabled={isLoading}
                                     defaultValue={servings ?? ""}
-                                    className="rounded border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none disabled:opacity-50"
+                                    className="w-full rounded border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none disabled:opacity-50"
                                 />
                             </div>
 

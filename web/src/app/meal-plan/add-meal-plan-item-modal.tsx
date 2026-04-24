@@ -71,7 +71,7 @@ export function AddMealPlanItemModal({ meal_plan_id, recipes, addMealPlanItem }:
                                     required
                                     disabled={isLoading}
                                     defaultValue=""
-                                    className="rounded border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none disabled:opacity-50"
+                                    className="w-full rounded border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none disabled:opacity-50"
                                 >
                                     <option value="" disabled>
                                         Select recipe
@@ -93,7 +93,7 @@ export function AddMealPlanItemModal({ meal_plan_id, recipes, addMealPlanItem }:
                                     name="scheduled_for"
                                     type="date"
                                     disabled={isLoading}
-                                    className="rounded border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none disabled:opacity-50"
+                                    className="w-full rounded border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none disabled:opacity-50"
                                 />
                             </div>
 
@@ -107,7 +107,7 @@ export function AddMealPlanItemModal({ meal_plan_id, recipes, addMealPlanItem }:
                                     type="text"
                                     placeholder="e.g. Breakfast, Lunch, Dinner"
                                     disabled={isLoading}
-                                    className="rounded border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none disabled:opacity-50"
+                                    className="w-full rounded border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none disabled:opacity-50"
                                 />
                             </div>
 
@@ -122,7 +122,7 @@ export function AddMealPlanItemModal({ meal_plan_id, recipes, addMealPlanItem }:
                                     min={1}
                                     placeholder="Number of servings"
                                     disabled={isLoading}
-                                    className="rounded border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none disabled:opacity-50"
+                                    className="w-full rounded border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none disabled:opacity-50"
                                 />
                             </div>
 
