@@ -27,6 +27,7 @@ import {
   signUpAccount,
 } from "./actions";
 import { getRoleLabel } from "./auth/auth-shared";
+import { BasilOnboarding, BasilIdle } from "./components/mascot/BasilComponents";
 
 type Props = {
   message?: string;
@@ -68,6 +69,11 @@ export function AccountPanel({ message, error, currentAccount }: Props) {
         <FloatingEmoticon emoji="🍋" x="0%" y="85%" delay={2} />
         <FloatingEmoticon emoji="🥖" x="100%" y="75%" delay={0.5} />
 
+        {/* Basil napping peacefully */}
+        <div className="absolute bottom-2 right-3 opacity-30 hover:opacity-60 transition-opacity duration-500">
+            <BasilIdle size={70} />
+        </div>
+        
         <div className="absolute top-[15%] left-1/2 -translate-x-1/2 w-40 h-40 bg-[var(--color-tomato)]/5 rounded-full blur-[60px] animate-blob -z-10 pointer-events-none" />
 
         <AnimatePresence mode="popLayout">
@@ -88,19 +94,15 @@ export function AccountPanel({ message, error, currentAccount }: Props) {
         </AnimatePresence>
 
         <div className="text-center mb-6">
-          <motion.div 
-            animate={{ rotate: [0, -12, 12, 0] }}
-            transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-            className="inline-block"
-          >
-            <ChefHat className="w-9 h-9 text-[var(--color-ink-muted)]/40 mb-3" />
-          </motion.div>
-          <h2 className="font-[family-name:var(--font-display)] text-3xl md:text-4xl font-light italic text-[var(--color-ink)] tracking-tight leading-none mb-1">
-            {isLogin ? "Welcome back" : "Join us"}
-          </h2>
-          <p className="font-[family-name:var(--font-body)] text-[var(--color-ink-muted)] text-sm italic">
-            {isLogin ? "Ready to cook something new?" : "Start your journey today."}
-          </p>
+            <div className="inline-block mb-3">
+                <BasilOnboarding size={90} />
+            </div>
+            <h2 className="font-[family-name:var(--font-display)] text-3xl md:text-4xl font-light italic text-[var(--color-ink)] tracking-tight leading-none mb-1">
+                {isLogin ? "Welcome back" : "Join us"}
+            </h2>
+            <p className="font-[family-name:var(--font-body)] text-[var(--color-ink-muted)] text-sm italic">
+                {isLogin ? "Ready to cook something new?" : "Basil’s excited to meet you."}
+            </p>
         </div>
 
         <motion.div layout transition={spring} className="relative bg-[var(--color-surface)] rounded-[2rem] p-6 md:p-8 border border-[var(--color-border)] shadow-sm z-10">

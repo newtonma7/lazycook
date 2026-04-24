@@ -11,7 +11,7 @@ import { getCurrentAccount } from "../auth/account-auth";
 import { DashboardNav } from "./DashboardNav";
 import { type Tab } from "../table-tabs";
 import { AlertCircle, ArrowLeft, Sparkles } from "lucide-react";
-
+import { BasilLoading, BasilIdle, BasilMealPlan } from "../components/mascot/BasilComponents";
 export const dynamic = "force-dynamic";
 
 // Updated to standard Next.js 15 strictly typed searchParams
@@ -111,9 +111,12 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-8">
             <Link href="/" className="group flex items-center gap-2">
+              {/* Tiny Basil napping beside the logo */}
+              <BasilIdle size={32} />
               <span className="font-[family-name:var(--font-display)] text-xl italic tracking-tight text-[var(--color-ink)] group-hover:text-[var(--color-tomato)] transition-colors">
                 lazycook
               </span>
+              
             </Link>
             {!!currentAccount && (
               <nav className="hidden lg:block">
@@ -150,9 +153,12 @@ export default async function DashboardPage({ searchParams }: PageProps) {
               </h1>
             </div>
             
-            <p className="text-[var(--color-ink-muted)] text-base max-w-sm hidden md:block text-right italic">
-              {currentTabConfig.description}
-            </p>
+            <div className="hidden md:flex items-center gap-4">
+              <BasilMealPlan size={80} />
+              <p className="text-[var(--color-ink-muted)] text-base max-w-sm text-right italic">
+                {currentTabConfig.description}
+              </p>
+            </div>
           </section>
         )}
 
@@ -160,8 +166,11 @@ export default async function DashboardPage({ searchParams }: PageProps) {
           <Suspense 
             key={activeTab} 
             fallback={
-              <div className="h-full w-full bg-[var(--color-surface)] rounded-[2rem] animate-pulse flex items-center justify-center border border-[var(--color-border-light)]">
-                <Sparkles className="w-6 h-6 text-[var(--color-border)] animate-bounce" />
+              <div className="h-full w-full bg-[var(--color-surface)] rounded-[2rem] flex flex-col items-center justify-center border border-[var(--color-border-light)] gap-4">
+                <BasilLoading size={60} />
+                <p className="font-[family-name:var(--font-handwritten)] text-lg text-[var(--color-ink-muted)] animate-pulse">
+                  just a moment… ☕
+                </p>
               </div>
             }
           >

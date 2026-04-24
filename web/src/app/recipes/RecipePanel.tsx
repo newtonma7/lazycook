@@ -2,12 +2,7 @@
 import { createSupabaseServerAuthClient, getCurrentAccount } from "../auth/account-auth";
 import { RecipeGallery } from "./RecipeGallery";
 import { ChefHat } from "lucide-react";
-
-type ConsumerInfo = {
-  consumer_id: number;
-  email: string;
-  username: string | null;
-};
+import type { ConsumerInfo } from "./types"; // new shared types
 
 type Props = {
     supabaseUrl: string;
@@ -23,7 +18,7 @@ export async function RecipePanel({ supabaseUrl, supabaseAnonKey }: Props) {
 
   if (!isAuthorized || !userId) {
     return (
-      <div className="w-full font-[family-name:var(--font-body)] animate-in fade-in duration-700 hide-scrollbar">
+      <div className="w-full font-[family-name:var(--font-body)] animate-in fade-in duration-700">
         <div className="max-w-md mx-auto mt-12 rounded-[2.5rem] border border-[var(--color-tomato)]/20 bg-[var(--color-tomato)]/5 p-8 text-center relative overflow-hidden shadow-sm">
           <div className="absolute top-0 left-0 w-full h-1 bg-[var(--color-tomato)] opacity-40" />
           <ChefHat className="w-10 h-10 text-[var(--color-tomato)]/40 mx-auto mb-4" />
@@ -54,7 +49,7 @@ export async function RecipePanel({ supabaseUrl, supabaseAnonKey }: Props) {
     );
   }
 
-  // If admin, fetch consumer list for the "User Kitchen" dropdown
+  // Fetch consumer list if admin (needed for "User Kitchen" dropdown)
   let consumers: ConsumerInfo[] = [];
   if (isAdmin) {
     const { data: consumerData } = await supabase
@@ -68,7 +63,7 @@ export async function RecipePanel({ supabaseUrl, supabaseAnonKey }: Props) {
     <RecipeGallery 
       supabaseUrl={supabaseUrl} 
       supabaseAnonKey={supabaseAnonKey}
-      consumerId={isAdmin ? null : userId}
+      consumerId={isAdmin ? null : userId}   // admin → null, consumer → actual ID
       ingredients={ingredientsData || []} 
       isAdmin={isAdmin}
       consumers={consumers}
