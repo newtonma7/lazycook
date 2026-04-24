@@ -49,10 +49,10 @@ function formatDate(value: string | null) {
         return "Not set";
     }
 
-    return new Date(`${value}T00:00:00`).toLocaleDateString(undefined, { 
-        weekday: 'long', 
-        month: 'short', 
-        day: 'numeric' 
+    return new Date(`${value}T00:00:00`).toLocaleDateString(undefined, {
+        weekday: 'long',
+        month: 'short',
+        day: 'numeric'
     });
 }
 
@@ -187,7 +187,7 @@ export async function MealPlanPanel({ supabaseUrl, supabaseAnonKey, selectedPlan
                                     className="group flex flex-col rounded-[2rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-8 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-[var(--color-sage)] hover:shadow-lg relative overflow-hidden"
                                 >
                                     <div className="absolute top-0 left-0 w-full h-1 bg-[var(--color-sage)] opacity-0 group-hover:opacity-100 transition-opacity" />
-                                    
+
                                     <h3 className="font-[family-name:var(--font-display)] text-3xl font-bold text-[var(--color-ink)] group-hover:text-[var(--color-sage)] transition-colors leading-tight mb-2">
                                         {plan.plan_name}
                                     </h3>
@@ -245,7 +245,7 @@ export async function MealPlanPanel({ supabaseUrl, supabaseAnonKey, selectedPlan
 
     return (
         <div className="space-y-10 font-[family-name:var(--font-body)] w-full animate-in fade-in duration-500 relative">
-            
+
             {/* Detail Header */}
             <div className="flex flex-col gap-6 relative z-10 border-b border-[var(--color-border-light)] pb-8">
                 <Link
@@ -254,7 +254,7 @@ export async function MealPlanPanel({ supabaseUrl, supabaseAnonKey, selectedPlan
                 >
                     <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> Back to Plans
                 </Link>
-                
+
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div>
                         <h2 className="text-5xl md:text-6xl font-[family-name:var(--font-display)] font-bold text-[var(--color-ink)] tracking-tight leading-[1.1]">
@@ -304,9 +304,10 @@ export async function MealPlanPanel({ supabaseUrl, supabaseAnonKey, selectedPlan
 
                             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                                 {dateItems.map((item) => (
-                                    <div
+                                    <Link
                                         key={item.meal_plan_item_id}
-                                        className="group rounded-[1.5rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-sm hover:shadow-md hover:border-[var(--color-tomato)]/50 transition-all duration-300"
+                                        href={`/dashboard?tab=recipe&recipe=${item.recipe_id}&back=meal_plan&plan=${selectedPlan.meal_plan_id}`}
+                                        className="group rounded-[1.5rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-sm hover:shadow-md hover:border-[var(--color-tomato)]/50 transition-all duration-300 cursor-pointer"
                                     >
                                         <div className="flex items-start justify-between gap-4">
                                             <div className="flex-1 min-w-0">
@@ -338,7 +339,7 @@ export async function MealPlanPanel({ supabaseUrl, supabaseAnonKey, selectedPlan
                                                 />
                                             </div>
                                         </div>
-                                    </div>
+                                    </Link>
                                 ))}
                             </div>
                         </section>
