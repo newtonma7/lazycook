@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
+import { ArrowLeft } from "lucide-react";
 import {
     addMealPlan,
     addMealPlanAndReturn,
@@ -48,7 +49,11 @@ function formatDate(value: string | null) {
         return "Not set";
     }
 
-    return new Date(`${value}T00:00:00`).toLocaleDateString();
+    return new Date(`${value}T00:00:00`).toLocaleDateString(undefined, { 
+        weekday: 'long', 
+        month: 'short', 
+        day: 'numeric' 
+    });
 }
 
 function formatDateRange(startDate: string | null, endDate: string | null) {
@@ -110,9 +115,12 @@ export async function MealPlanPanel({ supabaseUrl, supabaseAnonKey, selectedPlan
         const message = plansError?.message ?? itemsError?.message ?? recipesError?.message ?? "Unknown error";
 
         return (
-            <p className="rounded-md border border-red-300 bg-red-50 p-4 text-red-700">
-                Failed to load meal plan data: {message}
-            </p>
+            <div className="font-[family-name:var(--font-body)]">
+                <p className="rounded-[2rem] border border-[var(--color-tomato)]/30 bg-[var(--color-tomato)]/10 p-6 text-[var(--color-tomato)] text-sm shadow-sm">
+                    <span className="font-[family-name:var(--font-display)] font-bold text-xl block mb-1">Database Error</span>
+                    Failed to load meal plan data: {message}
+                </p>
+            </div>
         );
     }
 
@@ -133,31 +141,39 @@ export async function MealPlanPanel({ supabaseUrl, supabaseAnonKey, selectedPlan
         ? plans.find((plan) => plan.meal_plan_id === selectedPlanId) ?? null
         : null;
 
+    // --- ALL PLANS VIEW ---
     if (!selectedPlan) {
         const sortedPlans = [...plans].sort((a, b) => a.meal_plan_id - b.meal_plan_id);
 
         return (
-            <div className="space-y-8">
+            <div className="space-y-8 font-[family-name:var(--font-body)] w-full animate-in fade-in duration-500">
                 {typeof selectedPlanId === "number" && (
-                    <p className="rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                    <p className="rounded-[2rem] border border-[var(--color-tomato)]/30 bg-[var(--color-tomato)]/10 px-6 py-4 text-sm text-[var(--color-tomato)] shadow-sm">
                         Meal plan {selectedPlanId} was not found.
                     </p>
                 )}
 
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h2 className="text-lg font-medium text-zinc-900">Meal Plans</h2>
-                        <p className="mt-1 text-sm text-zinc-600">Select a plan to view and manage its details.</p>
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10 pb-6 border-b border-[var(--color-border-light)]">
+                    <div className="flex flex-col relative">
+                        <span className="font-[family-name:var(--font-handwritten)] text-[28px] text-[var(--color-tomato)] mb-[-6px] ml-1 z-10 block">
+                            orchestrate your week
+                        </span>
+                        <h2 className="font-[family-name:var(--font-display)] text-5xl md:text-6xl font-bold tracking-tight text-[var(--color-ink)] relative z-0">
+                            Meal Plans
+                        </h2>
                     </div>
-                    {currentConsumerId && <NewMealPlanModal addMealPlanAndReturn={addMealPlanAndReturn} consumerId={currentConsumerId} />}
+                    <div className="pb-2 shrink-0">
+                        {currentConsumerId && <NewMealPlanModal addMealPlanAndReturn={addMealPlanAndReturn} consumerId={currentConsumerId} />}
+                    </div>
                 </div>
 
                 {sortedPlans.length === 0 ? (
-                    <p className="rounded-md border border-zinc-200 bg-zinc-50 px-4 py-3 text-zinc-600">
-                        No meal plans found.
-                    </p>
+                    <div className="text-center py-32 border border-dashed border-[var(--color-border)] rounded-[3rem] bg-[var(--color-surface)]/50 shadow-sm">
+                        <p className="font-[family-name:var(--font-handwritten)] text-3xl text-[var(--color-ink)] mb-2">no plans yet</p>
+                        <p className="text-sm text-[var(--color-ink-muted)] italic">Create your first meal plan to start organizing your kitchen.</p>
+                    </div>
                 ) : (
-                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                    <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
                         {sortedPlans.map((plan) => {
                             const relatedItems = (itemsByPlanId.get(plan.meal_plan_id) ?? []).slice().sort(sortItemsByDateAndId);
                             const recipePreview = relatedItems
@@ -168,26 +184,37 @@ export async function MealPlanPanel({ supabaseUrl, supabaseAnonKey, selectedPlan
                                 <Link
                                     key={plan.meal_plan_id}
                                     href={`/dashboard?tab=meal_plan&plan=${plan.meal_plan_id}`}
-                                    className="group rounded-xl border border-zinc-200 bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-md"
+                                    className="group flex flex-col rounded-[2rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-8 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-[var(--color-sage)] hover:shadow-lg relative overflow-hidden"
                                 >
-                                    <h3 className="mt-2 text-lg font-semibold text-zinc-900 group-hover:text-blue-700">{plan.plan_name}</h3>
-                                    <p className="mt-2 text-sm text-zinc-600">{formatDateRange(plan.start_date, plan.end_date)}</p>
+                                    <div className="absolute top-0 left-0 w-full h-1 bg-[var(--color-sage)] opacity-0 group-hover:opacity-100 transition-opacity" />
+                                    
+                                    <h3 className="font-[family-name:var(--font-display)] text-3xl font-bold text-[var(--color-ink)] group-hover:text-[var(--color-sage)] transition-colors leading-tight mb-2">
+                                        {plan.plan_name}
+                                    </h3>
+                                    <p className="text-sm text-[var(--color-ink-muted)] italic">
+                                        {formatDateRange(plan.start_date, plan.end_date)}
+                                    </p>
 
-                                    <div className="mt-4 border-t border-zinc-100 pt-3">
-                                        <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">Recipes:</p>
+                                    <div className="mt-6 border-t border-[var(--color-border-light)] pt-5 flex-1">
+                                        <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--color-ink-muted)] mb-3">
+                                            Scheduled Recipes:
+                                        </p>
                                         {recipePreview.length === 0 ? (
-                                            <p className="mt-2 text-sm text-zinc-500">No recipes in this plan yet.</p>
+                                            <p className="text-sm text-[var(--color-ink-muted)] italic">No recipes in this plan yet.</p>
                                         ) : (
-                                            <ul className="mt-2 space-y-1 text-sm text-zinc-700">
+                                            <ul className="space-y-2 text-sm text-[var(--color-ink)]">
                                                 {recipePreview.map((recipeName, index) => (
-                                                    <li key={`${plan.meal_plan_id}-${index}`} className="truncate">
-                                                        {recipeName}
+                                                    <li key={`${plan.meal_plan_id}-${index}`} className="flex items-start gap-2 truncate">
+                                                        <span className="mt-2 w-1 h-1 rounded-full bg-[var(--color-ink-muted)] shrink-0" />
+                                                        <span className="truncate">{recipeName}</span>
                                                     </li>
                                                 ))}
                                             </ul>
                                         )}
                                         {relatedItems.length > 5 && (
-                                            <p className="mt-2 text-xs text-zinc-500">+{relatedItems.length - 5} more</p>
+                                            <p className="mt-3 text-[11px] font-bold uppercase tracking-widest text-[var(--color-sage)]">
+                                                + {relatedItems.length - 5} more
+                                            </p>
                                         )}
                                     </div>
                                 </Link>
@@ -199,6 +226,7 @@ export async function MealPlanPanel({ supabaseUrl, supabaseAnonKey, selectedPlan
         );
     }
 
+    // --- SINGLE PLAN VIEW ---
     const selectedItems = (itemsByPlanId.get(selectedPlan.meal_plan_id) ?? []).slice().sort(sortItemsByDateAndId);
     const itemsByDate = new Map<string, MealPlanItemRow[]>();
 
@@ -216,85 +244,99 @@ export async function MealPlanPanel({ supabaseUrl, supabaseAnonKey, selectedPlan
     });
 
     return (
-        <div className="space-y-6">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                    <h2 className="text-lg font-semibold text-zinc-900">{selectedPlan.plan_name}</h2>
-                    <p className="mt-1 text-sm text-zinc-600">{formatDateRange(selectedPlan.start_date, selectedPlan.end_date)}</p>
-                </div>
+        <div className="space-y-10 font-[family-name:var(--font-body)] w-full animate-in fade-in duration-500 relative">
+            
+            {/* Detail Header */}
+            <div className="flex flex-col gap-6 relative z-10 border-b border-[var(--color-border-light)] pb-8">
+                <Link
+                    href="/dashboard?tab=meal_plan"
+                    className="group flex items-center gap-2 text-[11px] font-bold tracking-[0.15em] text-[var(--color-ink-muted)] hover:text-[var(--color-tomato)] transition-colors uppercase cursor-pointer self-start"
+                >
+                    <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> Back to Plans
+                </Link>
+                
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div>
+                        <h2 className="text-5xl md:text-6xl font-[family-name:var(--font-display)] font-bold text-[var(--color-ink)] tracking-tight leading-[1.1]">
+                            {selectedPlan.plan_name}
+                        </h2>
+                        <p className="mt-3 text-lg text-[var(--color-ink-muted)] italic">
+                            {formatDateRange(selectedPlan.start_date, selectedPlan.end_date)}
+                        </p>
+                    </div>
 
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                    <EditMealPlanModal
-                        meal_plan_id={selectedPlan.meal_plan_id}
-                        plan_name={selectedPlan.plan_name}
-                        start_date={selectedPlan.start_date}
-                        end_date={selectedPlan.end_date}
-                        updateMealPlan={updateMealPlan}
-                        deleteMealPlan={deleteMealPlan}
-                    />
-                    <Link
-                        href="/dashboard?tab=meal_plan"
-                        className="rounded border border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
-                    >
-                        Back to All Meal Plans
-                    </Link>
+                    <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                        <AddMealPlanItemModal
+                            meal_plan_id={selectedPlan.meal_plan_id}
+                            recipes={recipes}
+                            addMealPlanItem={addMealPlanItem}
+                        />
+                        <EditMealPlanModal
+                            meal_plan_id={selectedPlan.meal_plan_id}
+                            plan_name={selectedPlan.plan_name}
+                            start_date={selectedPlan.start_date}
+                            end_date={selectedPlan.end_date}
+                            updateMealPlan={updateMealPlan}
+                            deleteMealPlan={deleteMealPlan}
+                        />
+                    </div>
                 </div>
             </div>
 
-            <AddMealPlanItemModal
-                meal_plan_id={selectedPlan.meal_plan_id}
-                recipes={recipes}
-                addMealPlanItem={addMealPlanItem}
-            />
-
-            <div className="space-y-4">
-                <h3 className="text-base font-medium text-zinc-900">Meal plan items by date</h3>
-
+            {/* Items Container */}
+            <div className="space-y-12 max-w-5xl">
                 {groupedItems.length === 0 ? (
-                    <p className="rounded-md border border-zinc-200 bg-zinc-50 px-4 py-3 text-zinc-600">
-                        No meal plan items linked to this plan yet.
-                    </p>
+                    <div className="text-center py-24 border border-dashed border-[var(--color-border)] rounded-[3rem] bg-[var(--color-surface)]/50 shadow-sm">
+                        <p className="font-[family-name:var(--font-handwritten)] text-3xl text-[var(--color-ink)] mb-2">blank canvas</p>
+                        <p className="text-sm text-[var(--color-ink-muted)] italic">No recipes scheduled for this plan yet.</p>
+                    </div>
                 ) : (
                     groupedItems.map(([dateKey, dateItems]) => (
-                        <section key={dateKey} className="space-y-3">
-                            <div className="flex items-center justify-between">
-                                <h4 className="text-sm font-semibold text-zinc-900">
+                        <section key={dateKey} className="space-y-6">
+                            <div className="flex items-end justify-between border-b border-[var(--color-border-light)] pb-3">
+                                <h4 className="font-[family-name:var(--font-display)] text-3xl font-bold text-[var(--color-ink)]">
                                     {dateKey === "Unscheduled" ? "Unscheduled" : formatDate(dateKey)}
                                 </h4>
-                                <span className="text-xs text-zinc-600">{dateItems.length} item(s)</span>
+                                <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-muted)]">
+                                    {dateItems.length} item{dateItems.length !== 1 ? 's' : ''}
+                                </span>
                             </div>
 
-                            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                                 {dateItems.map((item) => (
                                     <div
                                         key={item.meal_plan_item_id}
-                                        className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow"
+                                        className="group rounded-[1.5rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-sm hover:shadow-md hover:border-[var(--color-tomato)]/50 transition-all duration-300"
                                     >
-                                        <div className="flex items-start justify-between gap-3">
+                                        <div className="flex items-start justify-between gap-4">
                                             <div className="flex-1 min-w-0">
-                                                <h5 className="font-semibold text-zinc-900 truncate">
+                                                {item.meal_type && (
+                                                    <span className="inline-block text-[9px] font-bold uppercase tracking-widest text-[var(--color-ink-muted)] mb-2 bg-[var(--color-cream)] border border-[var(--color-border-light)] px-2 py-0.5 rounded-md">
+                                                        {item.meal_type}
+                                                    </span>
+                                                )}
+                                                <h5 className="font-[family-name:var(--font-display)] text-2xl font-bold text-[var(--color-ink)] leading-tight mb-2 truncate group-hover:text-[var(--color-tomato)] transition-colors">
                                                     {getRecipeName(item.recipe_id, recipeTitleById)}
                                                 </h5>
-                                                {item.meal_type && (
-                                                    <p className="mt-1 text-sm text-zinc-600">{item.meal_type}</p>
-                                                )}
                                                 {item.servings && (
-                                                    <p className="mt-1 text-sm text-zinc-600">
+                                                    <p className="text-[11px] font-bold uppercase tracking-widest text-[var(--color-ink-light)] font-[family-name:var(--font-mono)] mt-3">
                                                         {item.servings} {item.servings === 1 ? "serving" : "servings"}
                                                     </p>
                                                 )}
                                             </div>
-                                            <EditMealPlanItemModal
-                                                meal_plan_item_id={item.meal_plan_item_id}
-                                                recipe_id={item.recipe_id}
-                                                scheduled_for={item.scheduled_for}
-                                                meal_type={item.meal_type}
-                                                servings={item.servings}
-                                                meal_plan_id={selectedPlan.meal_plan_id}
-                                                recipes={recipes}
-                                                updateMealPlanItem={updateMealPlanItem}
-                                                deleteMealPlanItem={deleteMealPlanItem}
-                                            />
+                                            <div className="shrink-0 opacity-60 group-hover:opacity-100 transition-opacity">
+                                                <EditMealPlanItemModal
+                                                    meal_plan_item_id={item.meal_plan_item_id}
+                                                    recipe_id={item.recipe_id}
+                                                    scheduled_for={item.scheduled_for}
+                                                    meal_type={item.meal_type}
+                                                    servings={item.servings}
+                                                    meal_plan_id={selectedPlan.meal_plan_id}
+                                                    recipes={recipes}
+                                                    updateMealPlanItem={updateMealPlanItem}
+                                                    deleteMealPlanItem={deleteMealPlanItem}
+                                                />
+                                            </div>
                                         </div>
                                     </div>
                                 ))}

@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { spring } from "@/lib/animation";
 import {
   deleteCurrentAccount,
   signOutAccount,
@@ -28,31 +29,35 @@ type Props = {
 
 export function AccountPanel({ currentAccount }: Props) {
   return (
-    <div className="max-w-6xl mx-auto space-y-8">
-      {/* HERO — softened, human scale */}
-
+    <div className="max-w-6xl mx-auto space-y-8 font-[family-name:var(--font-body)]">
       {currentAccount && (
         <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
           {/* IDENTITY */}
           <motion.section
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            className="relative rounded-[2rem] border border-[var(--color-mist)] bg-[var(--color-warm-white)] p-8 overflow-hidden"
+            transition={spring}
+            className="relative rounded-[2rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-8 overflow-hidden shadow-sm"
           >
-            {/* subtle paper depth */}
-            <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-[var(--color-saffron)]/5" />
+            {/* subtle ambient glow */}
+            <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-[var(--color-peach)]/5 pointer-events-none" />
 
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="font-serif text-2xl text-[var(--color-charcoal)]">
-                Kitchen Identity
-              </h3>
+            <div className="relative z-10 flex items-start justify-between mb-8">
+              <div>
+                <span className="text-[15px] italic text-[var(--color-ink-muted)] block mb-1">
+                  the chef's details
+                </span>
+                <h3 className="font-[family-name:var(--font-display)] text-3xl text-[var(--color-ink)] tracking-tight">
+                  Kitchen Identity
+                </h3>
+              </div>
 
-              <span className="text-[10px] px-3 py-1 rounded-full bg-[var(--color-terracotta)]/10 text-[var(--color-terracotta)] font-semibold tracking-wide">
+              <span className="text-[11px] px-3 py-1.5 rounded-full bg-[var(--color-tomato)]/10 text-[var(--color-tomato)] font-bold tracking-wide uppercase">
                 {getRoleLabel(currentAccount.role)}
               </span>
             </div>
 
-            <div className="grid sm:grid-cols-2 gap-4">
+            <div className="relative z-10 grid sm:grid-cols-2 gap-4">
               {[
                 {
                   label: "Email",
@@ -75,44 +80,50 @@ export function AccountPanel({ currentAccount }: Props) {
                   icon: ShieldCheck,
                 },
               ].map((f, i) => (
-                <div
+                <motion.div
                   key={i}
-                  className="group relative rounded-xl border border-[var(--color-mist)] bg-[var(--color-cream)] p-4 transition-all hover:shadow-md"
+                  whileHover={{ y: -2, backgroundColor: "var(--color-linen)" }}
+                  transition={spring}
+                  className="group relative rounded-2xl border border-[var(--color-border-light)] bg-[var(--color-cream)] p-5 overflow-hidden transition-colors"
                 >
-                  {/* micro accent stripe */}
-                  <div className="absolute left-0 top-0 h-full w-1 bg-[var(--color-saffron)] opacity-0 group-hover:opacity-100 transition" />
+                  {/* macro accent stripe */}
+                  <div className="absolute left-0 top-0 h-full w-1 bg-[var(--color-turmeric)] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
-                  <div className="flex items-center gap-2 text-[var(--color-stone)] text-xs mb-1">
-                    <f.icon className="w-3 h-3" />
+                  <div className="flex items-center gap-2 text-[var(--color-ink-muted)] text-xs mb-2">
+                    <f.icon className="w-4 h-4 text-[var(--color-tomato)]/80" />
                     {f.label}
                   </div>
 
-                  <p className="text-sm font-medium text-[var(--color-charcoal)]">
+                  <p className="text-base text-[var(--color-ink)] font-medium">
                     {f.value}
                   </p>
-                </div>
+                </motion.div>
               ))}
             </div>
 
             {currentAccount.createdAt && (
-              <div className="mt-6 pt-4 border-t border-[var(--color-mist)] text-xs text-[var(--color-stone)] flex items-center gap-2">
-                <Calendar className="w-3 h-3" />
+              <div className="relative z-10 mt-8 pt-5 border-t border-[var(--color-border-light)] text-xs text-[var(--color-ink-muted)] flex items-center gap-2">
+                <Calendar className="w-4 h-4" />
                 Joined{" "}
-                {new Date(currentAccount.createdAt).toLocaleDateString(
-                  undefined,
-                  { month: "short", year: "numeric" }
-                )}
+                <span className="font-medium">
+                  {new Date(currentAccount.createdAt).toLocaleDateString(
+                    undefined,
+                    { month: "short", year: "numeric", day: "numeric" }
+                  )}
+                </span>
               </div>
             )}
           </motion.section>
 
           {/* FORM */}
-          <div className="space-y-5">
-            <div className="relative rounded-[2rem] border border-[var(--color-mist)] bg-[var(--color-warm-white)] p-6 overflow-hidden">
-              {/* texture wash */}
-              <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-[var(--color-terracotta)]/5" />
-
-              <h3 className="font-serif text-xl text-[var(--color-charcoal)] mb-4">
+          <div className="space-y-4">
+            <motion.div 
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ ...spring, delay: 0.1 }}
+              className="relative rounded-[2rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-8 overflow-hidden shadow-sm"
+            >
+              <h3 className="font-[family-name:var(--font-display)] text-2xl text-[var(--color-ink)] mb-6">
                 Update Profile
               </h3>
 
@@ -122,49 +133,74 @@ export function AccountPanel({ currentAccount }: Props) {
                     name: "username",
                     value: currentAccount.username ?? "",
                     placeholder: "Username",
+                    icon: User,
                   },
                   {
                     name: "email",
                     value: currentAccount.email,
-                    placeholder: "Email",
+                    placeholder: "Email address",
+                    icon: Mail,
                   },
                 ].map((i, idx) => (
-                  <input
-                    key={idx}
-                    name={i.name}
-                    defaultValue={i.value}
-                    placeholder={i.placeholder}
-                    className="w-full px-4 py-3 rounded-xl bg-[var(--color-cream)] border border-[var(--color-mist)] text-sm focus:border-[var(--color-terracotta)] outline-none transition"
-                  />
+                  <div key={idx} className="relative group">
+                    <i.icon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-ink-muted)] group-focus-within:text-[var(--color-tomato)] transition-colors" />
+                    <input
+                      name={i.name}
+                      defaultValue={i.value}
+                      placeholder={i.placeholder}
+                      className="w-full pl-11 pr-4 py-3.5 rounded-xl bg-transparent border border-[var(--color-border)] text-sm text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] focus:border-[var(--color-tomato)] focus:bg-[var(--color-cream)] outline-none transition-all"
+                    />
+                  </div>
                 ))}
 
-                <input
-                  name="password"
-                  type="password"
-                  placeholder="New password"
-                  className="w-full px-4 py-3 rounded-xl bg-[var(--color-cream)] border border-[var(--color-mist)] text-sm focus:border-[var(--color-terracotta)] outline-none transition"
-                />
+                <div className="relative group">
+                  <KeyRound className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-ink-muted)] group-focus-within:text-[var(--color-tomato)] transition-colors" />
+                  <input
+                    name="password"
+                    type="password"
+                    placeholder="New password"
+                    className="w-full pl-11 pr-4 py-3.5 rounded-xl bg-transparent border border-[var(--color-border)] text-sm text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] focus:border-[var(--color-tomato)] focus:bg-[var(--color-cream)] outline-none transition-all"
+                  />
+                </div>
 
-                <button className="w-full py-3 rounded-xl bg-[var(--color-terracotta)] text-white text-xs tracking-widest font-semibold hover:shadow-md hover:-translate-y-[1px] transition">
+                <motion.button 
+                  whileTap={{ scale: 0.97 }}
+                  transition={spring}
+                  className="w-full mt-2 py-3.5 rounded-xl bg-[var(--color-tomato)] text-white text-sm font-medium hover:opacity-90 hover:shadow-[0_4px_12px_rgba(193,68,14,0.15)] transition-all cursor-pointer"
+                >
                   Save Changes
-                </button>
+                </motion.button>
               </form>
-            </div>
+            </motion.div>
 
-            <div className="flex gap-3">
+            <motion.div 
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ ...spring, delay: 0.15 }}
+              className="flex gap-3"
+            >
               <form action={signOutAccount} className="flex-1">
-                <button className="w-full py-2.5 rounded-xl bg-[var(--color-charcoal)] text-white text-sm flex items-center justify-center gap-2 hover:opacity-90 transition">
+                <motion.button 
+                  whileTap={{ scale: 0.97 }}
+                  transition={spring}
+                  className="w-full py-3.5 rounded-xl bg-transparent border border-[var(--color-border)] text-[var(--color-ink-light)] text-sm font-medium flex items-center justify-center gap-2 hover:bg-[var(--color-border-light)] hover:text-[var(--color-ink)] transition-all cursor-pointer"
+                >
                   <LogOut className="w-4 h-4" />
                   Sign Out
-                </button>
+                </motion.button>
               </form>
 
               <form action={deleteCurrentAccount}>
-                <button className="px-4 rounded-xl bg-[var(--color-terracotta)]/10 text-[var(--color-terracotta)] hover:bg-[var(--color-terracotta)] hover:text-white transition">
+                <motion.button 
+                  whileTap={{ scale: 0.97 }}
+                  transition={spring}
+                  className="h-full px-5 rounded-xl bg-transparent border border-[var(--color-border)] text-[var(--color-ink-muted)] flex items-center justify-center hover:bg-[var(--color-tomato)]/10 hover:border-[var(--color-tomato)]/30 hover:text-[var(--color-tomato)] transition-all cursor-pointer"
+                  title="Delete Account"
+                >
                   <Trash2 className="w-4 h-4" />
-                </button>
+                </motion.button>
               </form>
-            </div>
+            </motion.div>
           </div>
         </div>
       )}
