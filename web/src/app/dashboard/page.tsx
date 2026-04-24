@@ -4,7 +4,7 @@ import { AccountPanel } from "../account";
 import { IngredientPanel } from "../ingredient";
 import { MealPlanPanel } from "../meal-plan/meal-plan";
 import { PantryPanel } from "../pantry";
-import { RecipePanel } from "../recipes";
+import { RecipePanel } from "../recipes/recipes";
 import { AiRecipePanel } from "../ai-recipe-panel";
 import { getCurrentAccount } from "../account-auth";
 import { TableTabs, type Tab } from "../table-tabs";
