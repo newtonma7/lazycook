@@ -17,7 +17,7 @@ import {
   setAccountSession,
   verifyPassword,
   type AccountRole,
-} from "./account-auth";
+} from "./auth/account-auth";
 import { redirect, unstable_rethrow } from "next/navigation";
 
 function buildAccountRedirect(params: Record<string, string>) {

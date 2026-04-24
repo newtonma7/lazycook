@@ -1,4 +1,4 @@
-import { createSupabaseServerAuthClient, getCurrentAccount } from "../account-auth";
+import { createSupabaseServerAuthClient, getCurrentAccount } from "../auth/account-auth";
 import { RecipeGallery } from "./RecipeGallery";
 
 type Props = {

@@ -1,263 +1,173 @@
+"use client";
+
 import Link from "next/link";
-import { deleteCurrentAccount, signInAccount, signOutAccount, signUpAccount, updateCurrentAccount } from "./actions";
-import { getCurrentAccount, getRoleLabel } from "./account-auth";
+import {
+  User,
+  Mail,
+  ShieldCheck,
+  Trash2,
+  LogOut,
+  KeyRound,
+  Fingerprint,
+  Calendar,
+} from "lucide-react";
+import { motion } from "framer-motion";
+import { cn } from "@/lib/utils";
+import {
+  deleteCurrentAccount,
+  signOutAccount,
+  updateCurrentAccount,
+} from "./actions";
+import { getRoleLabel } from "./auth/auth-shared";
 
 type Props = {
-    message?: string;
-    error?: string;
+  message?: string;
+  error?: string;
+  currentAccount: any;
 };
 
-function StatusBanner({ tone, text }: { tone: "error" | "success"; text: string }) {
-    const classes =
-        tone === "error"
-            ? "border-red-300 bg-red-50 text-red-700"
-            : "border-emerald-300 bg-emerald-50 text-emerald-700";
+export function AccountPanel({ currentAccount }: Props) {
+  return (
+    <div className="max-w-6xl mx-auto space-y-8">
+      {/* HERO — softened, human scale */}
 
-    return <p className={`rounded-md border px-4 py-3 text-sm ${classes}`}>{text}</p>;
-}
+      {currentAccount && (
+        <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
+          {/* IDENTITY */}
+          <motion.section
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="relative rounded-[2rem] border border-[var(--color-mist)] bg-[var(--color-warm-white)] p-8 overflow-hidden"
+          >
+            {/* subtle paper depth */}
+            <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-[var(--color-saffron)]/5" />
 
-function RoleButtons({ action }: { action: "signin" | "signup" }) {
-    const labels = action === "signin" ? ["Sign in as Consumer", "Sign in as Admin"] : ["Sign up as Consumer", "Sign up as Admin"];
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="font-serif text-2xl text-[var(--color-charcoal)]">
+                Kitchen Identity
+              </h3>
 
-    return (
-        <div className="flex flex-col gap-2 sm:flex-row">
-            <button
-                type="submit"
-                name="role"
-                value="consumer"
-                className="rounded bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-1"
-            >
-                {labels[0]}
-            </button>
-            <button
-                type="submit"
-                name="role"
-                value="admin"
-                className="rounded bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-1"
-            >
-                {labels[1]}
-            </button>
-        </div>
-    );
-}
+              <span className="text-[10px] px-3 py-1 rounded-full bg-[var(--color-terracotta)]/10 text-[var(--color-terracotta)] font-semibold tracking-wide">
+                {getRoleLabel(currentAccount.role)}
+              </span>
+            </div>
 
-export async function AccountPanel({ message, error }: Props) {
-    const currentAccount = await getCurrentAccount();
+            <div className="grid sm:grid-cols-2 gap-4">
+              {[
+                {
+                  label: "Email",
+                  value: currentAccount.email,
+                  icon: Mail,
+                },
+                {
+                  label: "Handle",
+                  value: currentAccount.username ?? "Not set",
+                  icon: User,
+                },
+                {
+                  label: "ID",
+                  value: `#${currentAccount.userId}`,
+                  icon: Fingerprint,
+                },
+                {
+                  label: "Status",
+                  value: currentAccount.status ?? "Active",
+                  icon: ShieldCheck,
+                },
+              ].map((f, i) => (
+                <div
+                  key={i}
+                  className="group relative rounded-xl border border-[var(--color-mist)] bg-[var(--color-cream)] p-4 transition-all hover:shadow-md"
+                >
+                  {/* micro accent stripe */}
+                  <div className="absolute left-0 top-0 h-full w-1 bg-[var(--color-saffron)] opacity-0 group-hover:opacity-100 transition" />
 
-    return (
-        <div className="space-y-6">
-            {error ? <StatusBanner tone="error" text={error} /> : null}
-            {message ? <StatusBanner tone="success" text={message} /> : null}
+                  <div className="flex items-center gap-2 text-[var(--color-stone)] text-xs mb-1">
+                    <f.icon className="w-3 h-3" />
+                    {f.label}
+                  </div>
 
-            {currentAccount ? (
-                <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-                    <section className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
-                        <div className="flex flex-wrap items-center gap-3">
-                            <h3 className="text-lg font-semibold text-zinc-900">Signed in</h3>
-                            <span className="rounded-full bg-zinc-900 px-3 py-1 text-xs font-medium uppercase tracking-wide text-white">
-                                {getRoleLabel(currentAccount.role)}
-                            </span>
-                        </div>
-
-                        <dl className="mt-5 grid gap-4 sm:grid-cols-2">
-                            <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-4">
-                                <dt className="text-xs font-medium uppercase tracking-wide text-zinc-500">Email</dt>
-                                <dd className="mt-2 text-sm text-zinc-900">{currentAccount.email}</dd>
-                            </div>
-                            <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-4">
-                                <dt className="text-xs font-medium uppercase tracking-wide text-zinc-500">User ID</dt>
-                                <dd className="mt-2 text-sm text-zinc-900">{currentAccount.userId}</dd>
-                            </div>
-                            <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-4">
-                                <dt className="text-xs font-medium uppercase tracking-wide text-zinc-500">Username</dt>
-                                <dd className="mt-2 text-sm text-zinc-900">{currentAccount.username ?? "Not stored on this table"}</dd>
-                            </div>
-                            <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-4">
-                                <dt className="text-xs font-medium uppercase tracking-wide text-zinc-500">Status</dt>
-                                <dd className="mt-2 text-sm text-zinc-900">{currentAccount.status ?? "Not stored on this table"}</dd>
-                            </div>
-                        </dl>
-
-                        {currentAccount.createdAt ? (
-                            <p className="mt-4 text-xs text-zinc-500">
-                                Created {new Date(currentAccount.createdAt).toLocaleString()}
-                            </p>
-                        ) : null}
-                    </section>
-
-                    <section className="space-y-4 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
-                        <h3 className="text-lg font-semibold text-zinc-900">Manage this account</h3>
-
-                        <form action={updateCurrentAccount} className="space-y-4">
-                            <div className="flex flex-col gap-1">
-                                <label htmlFor="account-username" className="text-sm text-zinc-600">
-                                    Username
-                                </label>
-                                <input
-                                    id="account-username"
-                                    name="username"
-                                    type="text"
-                                    required
-                                    defaultValue={currentAccount.username ?? ""}
-                                    className="rounded border border-zinc-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
-                                />
-                            </div>
-
-                            <div className="flex flex-col gap-1">
-                                <label htmlFor="account-email" className="text-sm text-zinc-600">
-                                    Email
-                                </label>
-                                <input
-                                    id="account-email"
-                                    name="email"
-                                    type="email"
-                                    required
-                                    defaultValue={currentAccount.email}
-                                    className="rounded border border-zinc-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
-                                />
-                            </div>
-
-                            <div className="flex flex-col gap-1">
-                                <label htmlFor="account-password" className="text-sm text-zinc-600">
-                                    New password
-                                </label>
-                                <input
-                                    id="account-password"
-                                    name="password"
-                                    type="password"
-                                    minLength={8}
-                                    placeholder="Leave blank to keep the current password"
-                                    className="rounded border border-zinc-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
-                                />
-                            </div>
-
-                            <button
-                                type="submit"
-                                className="rounded bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-1"
-                            >
-                                Update my details
-                            </button>
-                        </form>
-
-                        <form action={signOutAccount}>
-                            <button
-                                type="submit"
-                                className="rounded border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-800 hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:ring-offset-1"
-                            >
-                                Sign out
-                            </button>
-                        </form>
-
-                        <form action={deleteCurrentAccount}>
-                            <button
-                                type="submit"
-                                className="rounded bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-1"
-                            >
-                                Delete this account
-                            </button>
-                        </form>
-                    </section>
+                  <p className="text-sm font-medium text-[var(--color-charcoal)]">
+                    {f.value}
+                  </p>
                 </div>
-            ) : (
-                <div className="grid gap-6 lg:grid-cols-2">
-                    <section className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
-                        <h3 className="text-lg font-semibold text-zinc-900">Sign in</h3>
-                        <p className="mt-2 text-sm text-zinc-600">Sign in with the email and password for your consumer or admin account.</p>
+              ))}
+            </div>
 
-                        <form action={signInAccount} className="mt-5 space-y-4">
-                            <div className="flex flex-col gap-1">
-                                <label htmlFor="signin-email" className="text-sm text-zinc-600">
-                                    Email
-                                </label>
-                                <input
-                                    id="signin-email"
-                                    name="email"
-                                    type="email"
-                                    required
-                                    className="rounded border border-zinc-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
-                                />
-                            </div>
-
-                            <div className="flex flex-col gap-1">
-                                <label htmlFor="signin-password" className="text-sm text-zinc-600">
-                                    Password
-                                </label>
-                                <input
-                                    id="signin-password"
-                                    name="password"
-                                    type="password"
-                                    required
-                                    className="rounded border border-zinc-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
-                                />
-                            </div>
-                            <button
-                                type="submit"
-                                className="rounded bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-1"
-                            >
-                                Sign in
-                            </button>
-                        </form>
-
-                        <div className="mt-4 text-right">
-                            <Link
-                                href="/forgot-password"
-                                className="text-xs text-zinc-500 underline decoration-zinc-300 underline-offset-2 hover:text-zinc-700"
-                            >
-                                Forgot password?
-                            </Link>
-                        </div>
-                    </section>
-
-                    <section className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
-                        <h3 className="text-lg font-semibold text-zinc-900">Sign up</h3>
-                        <p className="mt-2 text-sm text-zinc-600">Create either a consumer account or an admin account from the same screen.</p>
-
-                        <form action={signUpAccount} className="mt-5 space-y-4">
-                            <div className="flex flex-col gap-1">
-                                <label htmlFor="signup-username" className="text-sm text-zinc-600">
-                                    Username
-                                </label>
-                                <input
-                                    id="signup-username"
-                                    name="username"
-                                    type="text"
-                                    required
-                                    className="rounded border border-zinc-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
-                                />
-                            </div>
-
-                            <div className="flex flex-col gap-1">
-                                <label htmlFor="signup-email" className="text-sm text-zinc-600">
-                                    Email
-                                </label>
-                                <input
-                                    id="signup-email"
-                                    name="email"
-                                    type="email"
-                                    required
-                                    className="rounded border border-zinc-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
-                                />
-                            </div>
-
-                            <div className="flex flex-col gap-1">
-                                <label htmlFor="signup-password" className="text-sm text-zinc-600">
-                                    Password
-                                </label>
-                                <input
-                                    id="signup-password"
-                                    name="password"
-                                    type="password"
-                                    required
-                                    minLength={8}
-                                    className="rounded border border-zinc-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
-                                />
-                            </div>
-
-                            <RoleButtons action="signup" />
-                        </form>
-                    </section>
-                </div>
+            {currentAccount.createdAt && (
+              <div className="mt-6 pt-4 border-t border-[var(--color-mist)] text-xs text-[var(--color-stone)] flex items-center gap-2">
+                <Calendar className="w-3 h-3" />
+                Joined{" "}
+                {new Date(currentAccount.createdAt).toLocaleDateString(
+                  undefined,
+                  { month: "short", year: "numeric" }
+                )}
+              </div>
             )}
+          </motion.section>
+
+          {/* FORM */}
+          <div className="space-y-5">
+            <div className="relative rounded-[2rem] border border-[var(--color-mist)] bg-[var(--color-warm-white)] p-6 overflow-hidden">
+              {/* texture wash */}
+              <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-[var(--color-terracotta)]/5" />
+
+              <h3 className="font-serif text-xl text-[var(--color-charcoal)] mb-4">
+                Update Profile
+              </h3>
+
+              <form action={updateCurrentAccount} className="space-y-4">
+                {[
+                  {
+                    name: "username",
+                    value: currentAccount.username ?? "",
+                    placeholder: "Username",
+                  },
+                  {
+                    name: "email",
+                    value: currentAccount.email,
+                    placeholder: "Email",
+                  },
+                ].map((i, idx) => (
+                  <input
+                    key={idx}
+                    name={i.name}
+                    defaultValue={i.value}
+                    placeholder={i.placeholder}
+                    className="w-full px-4 py-3 rounded-xl bg-[var(--color-cream)] border border-[var(--color-mist)] text-sm focus:border-[var(--color-terracotta)] outline-none transition"
+                  />
+                ))}
+
+                <input
+                  name="password"
+                  type="password"
+                  placeholder="New password"
+                  className="w-full px-4 py-3 rounded-xl bg-[var(--color-cream)] border border-[var(--color-mist)] text-sm focus:border-[var(--color-terracotta)] outline-none transition"
+                />
+
+                <button className="w-full py-3 rounded-xl bg-[var(--color-terracotta)] text-white text-xs tracking-widest font-semibold hover:shadow-md hover:-translate-y-[1px] transition">
+                  Save Changes
+                </button>
+              </form>
+            </div>
+
+            <div className="flex gap-3">
+              <form action={signOutAccount} className="flex-1">
+                <button className="w-full py-2.5 rounded-xl bg-[var(--color-charcoal)] text-white text-sm flex items-center justify-center gap-2 hover:opacity-90 transition">
+                  <LogOut className="w-4 h-4" />
+                  Sign Out
+                </button>
+              </form>
+
+              <form action={deleteCurrentAccount}>
+                <button className="px-4 rounded-xl bg-[var(--color-terracotta)]/10 text-[var(--color-terracotta)] hover:bg-[var(--color-terracotta)] hover:text-white transition">
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </form>
+            </div>
+          </div>
         </div>
-    );
+      )}
+    </div>
+  );
 }

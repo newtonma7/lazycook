@@ -7,7 +7,7 @@ import { MealPlanPanel } from "../meal-plan/meal-plan";
 import { PantryPanel } from "../pantry";
 import { RecipePanel } from "../recipes/recipes";
 import { AiRecipePanel } from "../ai-recipe-panel/AiRecipePanel";
-import { getCurrentAccount } from "../account-auth";
+import { getCurrentAccount } from "../auth/account-auth";
 import { DashboardNav } from "./DashboardNav";
 import { type Tab } from "../table-tabs";
 import { AlertCircle, ArrowLeft, Sparkles } from "lucide-react";
@@ -126,7 +126,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
 
               <div className="p-8">
                 {activeTab === "account" && (
-                  <AccountPanel message={params.message} error={params.error} />
+                  <AccountPanel message={params.message} error={params.error} currentAccount={currentAccount} />
                 )}
                 {activeTab === "ingredient" && (
                   <IngredientPanel supabaseUrl={supabaseUrl} supabaseAnonKey={supabaseAnonKey} />

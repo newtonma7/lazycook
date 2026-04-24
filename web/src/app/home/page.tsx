@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getCurrentAccount } from "../account-auth";
+import { getCurrentAccount } from "../auth/account-auth";
 import { OrbitGraph } from "./orbit-graph";
 
 export default async function HomePage() {

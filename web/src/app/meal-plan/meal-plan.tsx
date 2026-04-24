@@ -13,7 +13,7 @@ import { NewMealPlanModal } from "./meal-plan-modal";
 import { EditMealPlanModal } from "./edit-meal-plan-modal";
 import { EditMealPlanItemModal } from "./edit-meal-plan-item-modal";
 import { AddMealPlanItemModal } from "./add-meal-plan-item-modal";
-import { getCurrentAccount } from "../account-auth";
+import { getCurrentAccount } from "../auth/account-auth";
 
 export type MealPlanRow = {
     meal_plan_id: number;

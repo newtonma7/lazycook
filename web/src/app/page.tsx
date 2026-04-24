@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getCurrentAccount } from "./account-auth";
+import { getCurrentAccount } from "./auth/account-auth";
 
 const ingredients = [
   { name: "tomatoes", cls: "bg-tomato/10 text-tomato" },
