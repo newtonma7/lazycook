@@ -11,6 +11,7 @@ import {
 } from "../actions";
 import { NewMealPlanModal } from "./meal-plan-modal";
 import { EditMealPlanModal } from "./edit-meal-plan-modal";
+import { EditMealPlanItemModal } from "./edit-meal-plan-item-modal";
 import { AddMealPlanItemModal } from "./add-meal-plan-item-modal";
 import { getCurrentAccount } from "../account-auth";
 
@@ -255,101 +256,49 @@ export async function MealPlanPanel({ supabaseUrl, supabaseAnonKey, selectedPlan
                     </p>
                 ) : (
                     groupedItems.map(([dateKey, dateItems]) => (
-                        <section key={dateKey} className="overflow-x-auto rounded-lg border border-zinc-200">
-                            <div className="flex items-center justify-between border-b border-zinc-200 bg-zinc-50 px-4 py-3">
+                        <section key={dateKey} className="space-y-3">
+                            <div className="flex items-center justify-between">
                                 <h4 className="text-sm font-semibold text-zinc-900">
                                     {dateKey === "Unscheduled" ? "Unscheduled" : formatDate(dateKey)}
                                 </h4>
                                 <span className="text-xs text-zinc-600">{dateItems.length} item(s)</span>
                             </div>
 
-                            <table className="min-w-full text-left text-xs">
-                                <thead className="bg-zinc-100 text-zinc-700">
-                                    <tr>
-                                        <th className="px-3 py-2 font-medium">meal_plan_item_id</th>
-                                        <th className="px-3 py-2 font-medium">recipe</th>
-                                        <th className="px-3 py-2 font-medium">scheduled_for</th>
-                                        <th className="px-3 py-2 font-medium">meal_type</th>
-                                        <th className="px-3 py-2 font-medium">servings</th>
-                                        <th className="px-3 py-2 font-medium">Modify</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {dateItems.map((item) => {
-                                        const itemFormId = `meal-plan-item-form-${item.meal_plan_item_id}`;
-
-                                        return (
-                                            <tr key={item.meal_plan_item_id} className="border-t border-zinc-200 align-top">
-                                                <td className="px-3 py-2 whitespace-nowrap">{item.meal_plan_item_id}</td>
-                                                <td className="px-3 py-2">
-                                                    <select
-                                                        form={itemFormId}
-                                                        name="recipe_id"
-                                                        defaultValue={String(item.recipe_id)}
-                                                        className="w-full min-w-[200px] rounded border border-zinc-300 px-2 py-1 text-xs focus:border-blue-500 focus:outline-none"
-                                                    >
-                                                        {recipes.map((recipe) => (
-                                                            <option key={recipe.recipe_id} value={recipe.recipe_id}>
-                                                                {recipe.title}
-                                                            </option>
-                                                        ))}
-                                                    </select>
-                                                    <div className="mt-1 text-[11px] text-zinc-500">
-                                                        Current: {getRecipeName(item.recipe_id, recipeTitleById)}
-                                                    </div>
-                                                </td>
-                                                <td className="px-3 py-2">
-                                                    <input
-                                                        form={itemFormId}
-                                                        name="scheduled_for"
-                                                        type="date"
-                                                        defaultValue={item.scheduled_for ?? ""}
-                                                        className="w-full min-w-[130px] rounded border border-zinc-300 px-2 py-1 text-xs focus:border-blue-500 focus:outline-none"
-                                                    />
-                                                </td>
-                                                <td className="px-3 py-2">
-                                                    <input
-                                                        form={itemFormId}
-                                                        name="meal_type"
-                                                        type="text"
-                                                        defaultValue={item.meal_type ?? ""}
-                                                        className="w-full min-w-[120px] rounded border border-zinc-300 px-2 py-1 text-xs focus:border-blue-500 focus:outline-none"
-                                                    />
-                                                </td>
-                                                <td className="px-3 py-2">
-                                                    <input
-                                                        form={itemFormId}
-                                                        name="servings"
-                                                        type="number"
-                                                        min={1}
-                                                        defaultValue={item.servings ?? ""}
-                                                        className="w-full min-w-[80px] rounded border border-zinc-300 px-2 py-1 text-xs focus:border-blue-500 focus:outline-none"
-                                                    />
-                                                </td>
-                                                <td className="px-3 py-2">
-                                                    <form id={itemFormId} action={updateMealPlanItem} className="flex min-w-[140px] flex-col gap-2">
-                                                        <input type="hidden" name="meal_plan_item_id" value={item.meal_plan_item_id} />
-                                                        <input type="hidden" name="redirect_plan_id" value={selectedPlan.meal_plan_id} />
-                                                        <button
-                                                            type="submit"
-                                                            className="rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
-                                                        >
-                                                            Save changes
-                                                        </button>
-                                                        <button
-                                                            type="submit"
-                                                            formAction={deleteMealPlanItem}
-                                                            className="rounded bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-1"
-                                                        >
-                                                            Delete
-                                                        </button>
-                                                    </form>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
+                            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                                {dateItems.map((item) => (
+                                    <div
+                                        key={item.meal_plan_item_id}
+                                        className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow"
+                                    >
+                                        <div className="flex items-start justify-between gap-3">
+                                            <div className="flex-1 min-w-0">
+                                                <h5 className="font-semibold text-zinc-900 truncate">
+                                                    {getRecipeName(item.recipe_id, recipeTitleById)}
+                                                </h5>
+                                                {item.meal_type && (
+                                                    <p className="mt-1 text-sm text-zinc-600">{item.meal_type}</p>
+                                                )}
+                                                {item.servings && (
+                                                    <p className="mt-1 text-sm text-zinc-600">
+                                                        {item.servings} {item.servings === 1 ? "serving" : "servings"}
+                                                    </p>
+                                                )}
+                                            </div>
+                                            <EditMealPlanItemModal
+                                                meal_plan_item_id={item.meal_plan_item_id}
+                                                recipe_id={item.recipe_id}
+                                                scheduled_for={item.scheduled_for}
+                                                meal_type={item.meal_type}
+                                                servings={item.servings}
+                                                meal_plan_id={selectedPlan.meal_plan_id}
+                                                recipes={recipes}
+                                                updateMealPlanItem={updateMealPlanItem}
+                                                deleteMealPlanItem={deleteMealPlanItem}
+                                            />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
                         </section>
                     ))
                 )}
