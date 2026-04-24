@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { spring, easeOut } from "@/lib/animation";
 import { AmbientBackground } from "../components/ambient-background/AmbientBackground";
-import { BasilLoading, BasilEmpty } from "../components/mascot/BasilComponents";
+import { BasilLoading, BasilEmpty, BasilError } from "../components/mascot/BasilComponents";
 import { usePantry } from "./hooks/usePantry";
 import { useOllama } from "./hooks/useOllama";
 import { useRecipeGeneration } from "./hooks/useRecipeGeneration";
@@ -207,7 +207,8 @@ export function AiRecipePanel({
 
         {error && (
           <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="mx-auto mb-8 max-w-3xl rounded-2xl border border-[var(--color-terracotta)]/20 bg-[var(--color-terracotta-soft)] px-6 py-3 text-center text-sm font-medium text-[var(--color-terracotta)]">
-            {error}
+            <BasilError size={40} />
+            <p className="text-sm text-[var(--color-terracotta)]">{error}</p>
           </motion.div>
         )}
 

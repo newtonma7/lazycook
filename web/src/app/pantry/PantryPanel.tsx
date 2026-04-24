@@ -18,7 +18,7 @@ import {
 import { cn } from "@/lib/utils";
 import { spring, microEase, bouncySpring } from "@/lib/animation";
 import { AmbientBackground } from "../components/ambient-background/AmbientBackground";
-import { BasilEmpty } from "../components/mascot/BasilComponents";
+import { BasilEmpty, BasilError, BasilExpiry } from "../components/mascot/BasilComponents";
 
 /* -------------------------------------------------------------------------- */
 /*  Types                                                                     */
@@ -677,7 +677,8 @@ export function PantryPanel({
                     animate={{ opacity: 1, y: 0 }}
                     className="mb-4 rounded-xl border border-[var(--color-tomato)]/20 bg-[var(--color-terracotta-soft)] px-4 py-2 text-sm text-[var(--color-tomato)]"
                   >
-                    <AlertCircle className="inline h-4 w-4 mr-1" /> {error}
+                    <BasilError size={40} />
+                    <p className="text-sm text-[var(--color-terracotta)]">{error}</p>
                   </motion.div>
                 )}
 
@@ -757,6 +758,27 @@ export function PantryPanel({
                     </div>
                   )}
                 </div>
+                {/* Expiry warning banner */}
+                    {selectedPantryId && items.some(item => {
+                    const days = daysLeft(item.expiration_date);
+                    return days !== null && days <= 2;
+                    }) && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mt-6 rounded-2xl border border-[var(--color-terracotta)]/20 bg-[var(--color-terracotta-soft)] p-4 flex items-center gap-4"
+                    >
+                        <BasilExpiry size={60} />
+                        <div>
+                        <p className="text-sm font-bold text-[var(--color-terracotta)]">
+                            Some ingredients need attention!
+                        </p>
+                        <p className="text-xs text-[var(--color-text-secondary)] mt-1">
+                            Basil is sweeping up — check expiring items and plan your meals.
+                        </p>
+                        </div>
+                    </motion.div>
+                    )}
               </>
             )}
           </>

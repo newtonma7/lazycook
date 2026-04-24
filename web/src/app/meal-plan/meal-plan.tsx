@@ -1,3 +1,4 @@
+// components/meal-plan/meal-plan.tsx
 import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
 import { ArrowLeft } from "lucide-react";
@@ -15,6 +16,7 @@ import { EditMealPlanModal } from "./edit-meal-plan-modal";
 import { EditMealPlanItemModal } from "./edit-meal-plan-item-modal";
 import { AddMealPlanItemModal } from "./add-meal-plan-item-modal";
 import { getCurrentAccount } from "../auth/account-auth";
+import { BasilMealPlan, BasilEmpty } from "../components/mascot/BasilComponents";
 
 export type MealPlanRow = {
     meal_plan_id: number;
@@ -45,10 +47,7 @@ type Props = {
 };
 
 function formatDate(value: string | null) {
-    if (!value) {
-        return "Not set";
-    }
-
+    if (!value) return "Not set";
     return new Date(`${value}T00:00:00`).toLocaleDateString(undefined, {
         weekday: 'long',
         month: 'short',
@@ -57,29 +56,16 @@ function formatDate(value: string | null) {
 }
 
 function formatDateRange(startDate: string | null, endDate: string | null) {
-    if (!startDate && !endDate) {
-        return "No date range";
-    }
-
-    if (!startDate) {
-        return `Until ${formatDate(endDate)}`;
-    }
-
-    if (!endDate) {
-        return `Starting ${formatDate(startDate)}`;
-    }
-
+    if (!startDate && !endDate) return "No date range";
+    if (!startDate) return `Until ${formatDate(endDate)}`;
+    if (!endDate) return `Starting ${formatDate(startDate)}`;
     return `${formatDate(startDate)} - ${formatDate(endDate)}`;
 }
 
 function sortItemsByDateAndId(a: MealPlanItemRow, b: MealPlanItemRow) {
     const aDate = a.scheduled_for ?? "9999-12-31";
     const bDate = b.scheduled_for ?? "9999-12-31";
-
-    if (aDate !== bDate) {
-        return aDate.localeCompare(bDate);
-    }
-
+    if (aDate !== bDate) return aDate.localeCompare(bDate);
     return a.meal_plan_item_id - b.meal_plan_item_id;
 }
 
@@ -90,8 +76,9 @@ function getRecipeName(recipeId: number, recipeTitleById: Map<number, string>) {
 export async function MealPlanPanel({ supabaseUrl, supabaseAnonKey, selectedPlanId }: Props) {
     const supabase = createClient(supabaseUrl, supabaseAnonKey);
     const currentAccount = await getCurrentAccount();
-
-    const currentConsumerId = currentAccount?.role === "consumer" ? Number.parseInt(currentAccount.userId, 10) : null;
+    const currentConsumerId = currentAccount?.role === "consumer"
+        ? Number.parseInt(currentAccount.userId, 10)
+        : null;
 
     const [
         { data: plansData, error: plansError },
@@ -113,7 +100,6 @@ export async function MealPlanPanel({ supabaseUrl, supabaseAnonKey, selectedPlan
 
     if (plansError || itemsError || recipesError) {
         const message = plansError?.message ?? itemsError?.message ?? recipesError?.message ?? "Unknown error";
-
         return (
             <div className="font-[family-name:var(--font-body)]">
                 <p className="rounded-[2rem] border border-[var(--color-tomato)]/30 bg-[var(--color-tomato)]/10 p-6 text-[var(--color-tomato)] text-sm shadow-sm">
@@ -158,18 +144,26 @@ export async function MealPlanPanel({ supabaseUrl, supabaseAnonKey, selectedPlan
                         <span className="font-[family-name:var(--font-handwritten)] text-[28px] text-[var(--color-tomato)] mb-[-6px] ml-1 z-10 block">
                             orchestrate your week
                         </span>
-                        <h2 className="font-[family-name:var(--font-display)] text-5xl md:text-6xl font-bold tracking-tight text-[var(--color-ink)] relative z-0">
-                            Meal Plans
-                        </h2>
+                        <div className="flex items-center gap-3">
+                            <h2 className="font-[family-name:var(--font-display)] text-5xl md:text-6xl font-bold tracking-tight text-[var(--color-ink)] relative z-0">
+                                Meal Plans
+                            </h2>
+                            <BasilMealPlan size={50} />
+                        </div>
                     </div>
                     <div className="pb-2 shrink-0">
-                        {currentConsumerId && <NewMealPlanModal addMealPlanAndReturn={addMealPlanAndReturn} consumerId={currentConsumerId} />}
+                        {currentConsumerId && <NewMealPlanModal
+                            supabaseUrl={supabaseUrl}
+                            supabaseAnonKey={supabaseAnonKey}
+                            consumerId={currentConsumerId}
+                        />}
                     </div>
                 </div>
 
                 {sortedPlans.length === 0 ? (
                     <div className="text-center py-32 border border-dashed border-[var(--color-border)] rounded-[3rem] bg-[var(--color-surface)]/50 shadow-sm">
-                        <p className="font-[family-name:var(--font-handwritten)] text-3xl text-[var(--color-ink)] mb-2">no plans yet</p>
+                        <BasilEmpty size={80} />
+                        <p className="font-[family-name:var(--font-handwritten)] text-3xl text-[var(--color-ink)] mt-4 mb-2">no plans yet</p>
                         <p className="text-sm text-[var(--color-ink-muted)] italic">Create your first meal plan to start organizing your kitchen.</p>
                     </div>
                 ) : (
@@ -256,28 +250,33 @@ export async function MealPlanPanel({ supabaseUrl, supabaseAnonKey, selectedPlan
                 </Link>
 
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                    <div>
-                        <h2 className="text-5xl md:text-6xl font-[family-name:var(--font-display)] font-bold text-[var(--color-ink)] tracking-tight leading-[1.1]">
-                            {selectedPlan.plan_name}
-                        </h2>
-                        <p className="mt-3 text-lg text-[var(--color-ink-muted)] italic">
-                            {formatDateRange(selectedPlan.start_date, selectedPlan.end_date)}
-                        </p>
+                    <div className="flex items-center gap-3">
+                        <BasilMealPlan size={60} />
+                        <div>
+                            <h2 className="text-5xl md:text-6xl font-[family-name:var(--font-display)] font-bold text-[var(--color-ink)] tracking-tight leading-[1.1]">
+                                {selectedPlan.plan_name}
+                            </h2>
+                            <p className="mt-3 text-lg text-[var(--color-ink-muted)] italic">
+                                {formatDateRange(selectedPlan.start_date, selectedPlan.end_date)}
+                            </p>
+                        </div>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
                         <AddMealPlanItemModal
                             meal_plan_id={selectedPlan.meal_plan_id}
-                            recipes={recipes}
-                            addMealPlanItem={addMealPlanItem}
-                        />
+                            supabaseUrl={supabaseUrl}
+                            supabaseAnonKey={supabaseAnonKey}
+                            consumerId={currentConsumerId}
+                            />
                         <EditMealPlanModal
                             meal_plan_id={selectedPlan.meal_plan_id}
                             plan_name={selectedPlan.plan_name}
                             start_date={selectedPlan.start_date}
                             end_date={selectedPlan.end_date}
-                            updateMealPlan={updateMealPlan}
-                            deleteMealPlan={deleteMealPlan}
+                            supabaseUrl={supabaseUrl}
+                            supabaseAnonKey={supabaseAnonKey}
+                            consumerId={currentConsumerId}
                         />
                     </div>
                 </div>
@@ -287,7 +286,8 @@ export async function MealPlanPanel({ supabaseUrl, supabaseAnonKey, selectedPlan
             <div className="space-y-12 max-w-5xl">
                 {groupedItems.length === 0 ? (
                     <div className="text-center py-24 border border-dashed border-[var(--color-border)] rounded-[3rem] bg-[var(--color-surface)]/50 shadow-sm">
-                        <p className="font-[family-name:var(--font-handwritten)] text-3xl text-[var(--color-ink)] mb-2">blank canvas</p>
+                        <BasilEmpty size={80} />
+                        <p className="font-[family-name:var(--font-handwritten)] text-3xl text-[var(--color-ink)] mt-4 mb-2">blank canvas</p>
                         <p className="text-sm text-[var(--color-ink-muted)] italic">No recipes scheduled for this plan yet.</p>
                     </div>
                 ) : (
@@ -303,30 +303,36 @@ export async function MealPlanPanel({ supabaseUrl, supabaseAnonKey, selectedPlan
                             </div>
 
                             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                                {dateItems.map((item) => (
-                                    <Link
-                                        key={item.meal_plan_item_id}
-                                        href={`/dashboard?tab=recipe&recipe=${item.recipe_id}&back=meal_plan&plan=${selectedPlan.meal_plan_id}`}
-                                        className="group rounded-[1.5rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-sm hover:shadow-md hover:border-[var(--color-tomato)]/50 transition-all duration-300 cursor-pointer"
-                                    >
-                                        <div className="flex items-start justify-between gap-4">
-                                            <div className="flex-1 min-w-0">
-                                                {item.meal_type && (
-                                                    <span className="inline-block text-[9px] font-bold uppercase tracking-widest text-[var(--color-ink-muted)] mb-2 bg-[var(--color-cream)] border border-[var(--color-border-light)] px-2 py-0.5 rounded-md">
-                                                        {item.meal_type}
-                                                    </span>
-                                                )}
-                                                <h5 className="font-[family-name:var(--font-display)] text-2xl font-bold text-[var(--color-ink)] leading-tight mb-2 truncate group-hover:text-[var(--color-tomato)] transition-colors">
-                                                    {getRecipeName(item.recipe_id, recipeTitleById)}
-                                                </h5>
-                                                {item.servings && (
-                                                    <p className="text-[11px] font-bold uppercase tracking-widest text-[var(--color-ink-light)] font-[family-name:var(--font-mono)] mt-3">
-                                                        {item.servings} {item.servings === 1 ? "serving" : "servings"}
-                                                    </p>
-                                                )}
-                                            </div>
-                                            <div className="shrink-0 opacity-60 group-hover:opacity-100 transition-opacity">
+                                {dateItems.map((item) => {
+                                    return (
+                                        <div key={item.meal_plan_item_id} className="group relative rounded-[1.5rem] border border-[var(--color-border)] bg-[var(--color-surface)] shadow-sm hover:shadow-md hover:border-[var(--color-tomato)]/50 transition-all duration-300">
+                                            {/* The main clickable area - standard block link, no CSS pseudo-element tricks */}
+                                            <Link
+                                                href={`/dashboard?tab=recipe&recipe=${item.recipe_id}&back=meal_plan&plan=${selectedPlan.meal_plan_id}`}
+                                                className="block p-6 w-full h-full relative z-10"
+                                            >
+                                                <div className="pr-16">
+                                                    {item.meal_type && (
+                                                        <span className="inline-block text-[9px] font-bold uppercase tracking-widest text-[var(--color-ink-muted)] mb-2 bg-[var(--color-cream)] border border-[var(--color-border-light)] px-2 py-0.5 rounded-md">
+                                                            {item.meal_type}
+                                                        </span>
+                                                    )}
+                                                    <h5 className="font-[family-name:var(--font-display)] text-2xl font-bold text-[var(--color-ink)] leading-tight mb-2 truncate group-hover:text-[var(--color-tomato)] transition-colors">
+                                                        {getRecipeName(item.recipe_id, recipeTitleById)}
+                                                    </h5>
+                                                    {item.servings && (
+                                                        <p className="text-[11px] font-bold uppercase tracking-widest text-[var(--color-ink-light)] font-[family-name:var(--font-mono)] mt-3">
+                                                            {item.servings} {item.servings === 1 ? "serving" : "servings"}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </Link>
+                                            
+                                            {/* Absolutely positioned Edit Modal trigger */}
+                                            <div className="absolute top-5 right-5 z-20 shrink-0 opacity-60 group-hover:opacity-100 transition-opacity">
+                                                {/* We apply the dynamic key specifically to the Edit component so it gets fresh data, without forcing the parent card/Link to violently unmount */}
                                                 <EditMealPlanItemModal
+                                                    key={`${item.recipe_id}-${item.scheduled_for || 'no-date'}-${item.meal_type || 'no-type'}-${item.servings || 'no-servings'}`}
                                                     meal_plan_item_id={item.meal_plan_item_id}
                                                     recipe_id={item.recipe_id}
                                                     scheduled_for={item.scheduled_for}
@@ -334,13 +340,19 @@ export async function MealPlanPanel({ supabaseUrl, supabaseAnonKey, selectedPlan
                                                     servings={item.servings}
                                                     meal_plan_id={selectedPlan.meal_plan_id}
                                                     recipes={recipes}
-                                                    updateMealPlanItem={updateMealPlanItem}
-                                                    deleteMealPlanItem={deleteMealPlanItem}
+                                                    supabaseUrl={supabaseUrl}
+                                                    supabaseAnonKey={supabaseAnonKey}
+                                                    consumerId={currentConsumerId}
                                                 />
                                             </div>
+
+                                            {/* Basil napping on the corner of each card – discovered, not forced */}
+                                            <div className="absolute bottom-1 right-1 opacity-20 group-hover:opacity-40 transition-opacity pointer-events-none z-0">
+                                                <BasilEmpty size={30} />
+                                            </div>
                                         </div>
-                                    </Link>
-                                ))}
+                                    );
+                                })}
                             </div>
                         </section>
                     ))
