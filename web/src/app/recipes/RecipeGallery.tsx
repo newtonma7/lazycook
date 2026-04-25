@@ -1,16 +1,15 @@
-// src/app/recipes/RecipeGallery.tsx
+// components/recipes/RecipeGallery.tsx
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
-import { AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useRecipes } from "./hooks/useRecipes";
 import { useRecipeActions } from "./hooks/useRecipeActions";
 import { GalleryHeader } from "./components/GalleryHeader";
 import { RecipeGrid } from "./components/RecipeGrid";
 import { CookingMode } from "./components/CookingMode";
 import { RecipeDetail } from "./components/RecipeDetail";
-import { BasilSuccess } from "../components/mascot/BasilComponents";
 import type { IngredientOption, Recipe, ConsumerInfo } from "./types";
 
 type Props = {
@@ -60,24 +59,13 @@ export function RecipeGallery({
   const { saveToMyKitchen, toggleRecipeVisibility, saveEdit, deleteRecipe } =
     useRecipeActions(supabaseUrl, supabaseAnonKey, consumerId);
 
-  const [hasCheckedOtherTab, setHasCheckedOtherTab] = useState(false);
-
-  // Auto‑open recipe from URL param, intelligently searching tabs
+  // Auto‑open recipe from URL param
   useEffect(() => {
     if (recipeIdParam && recipes.length > 0) {
-      const targetId = Number(recipeIdParam);
-      const recipe = recipes.find((r) => r.recipe_id === targetId);
-      
-      if (recipe) {
-        setSelectedRecipe(recipe);
-        setHasCheckedOtherTab(false); // Reset for future clicks
-      } else if (!hasCheckedOtherTab && !isAdmin) {
-        // If not found, it might be in the 'Community' tab (or vice versa). Switch tabs once to look for it.
-        setViewMode((prev) => (prev === "personal" ? "public" : "personal"));
-        setHasCheckedOtherTab(true);
-      }
+      const recipe = recipes.find((r) => r.recipe_id === Number(recipeIdParam));
+      if (recipe) setSelectedRecipe(recipe);
     }
-  }, [recipeIdParam, recipes, hasCheckedOtherTab, isAdmin]);
+  }, [recipeIdParam, recipes]);
 
   const filteredRecipes = useMemo(() => {
     return recipes.filter((r) => {
@@ -198,25 +186,6 @@ export function RecipeGallery({
             recipe={cookingRecipe}
             onClose={() => setCookingRecipe(null)}
           />
-        )}
-      </AnimatePresence>
-
-      {/* Save celebration toast */}
-      <AnimatePresence>
-        {showSaveCelebration && (
-          <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50">
-            <div className="bg-[var(--color-warm-surface)] border border-[var(--color-sage)] rounded-2xl px-6 py-4 shadow-lg flex items-center gap-3">
-              <BasilSuccess size={50} />
-              <div>
-                <p className="font-[family-name:var(--font-handwritten)] text-lg text-[var(--color-text-primary)]">
-                  Saved to your cookbook! 📖
-                </p>
-                <p className="text-xs text-[var(--color-text-secondary)]">
-                  Basil is doing a happy dance
-                </p>
-              </div>
-            </div>
-          </div>
         )}
       </AnimatePresence>
     </div>

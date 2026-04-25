@@ -25,9 +25,10 @@ import {
   updateCurrentAccount,
   signInAccount, 
   signUpAccount,
-} from "./actions";
-import { getRoleLabel } from "./auth/auth-shared";
-import { BasilOnboarding, BasilIdle } from "./components/mascot/BasilComponents";
+} from "../actions";
+import { getRoleLabel } from "../auth/auth-shared";
+import { BasilOnboarding, BasilIdle, BasilError } from "../components/mascot/BasilComponents";
+import { createAdminAccount } from "./actions";  // already imported actions
 
 type Props = {
   message?: string;
@@ -79,9 +80,8 @@ export function AccountPanel({ message, error, currentAccount }: Props) {
         <AnimatePresence mode="popLayout">
           {error && (
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="mb-4 rounded-2xl border border-[var(--color-tomato)]/20 bg-[var(--color-tomato)]/5 p-3 flex items-start gap-3 shadow-sm relative overflow-hidden">
-               <div className="absolute top-0 left-0 w-1 h-full bg-[var(--color-tomato)]" />
-               <AlertCircle className="w-4 h-4 text-[var(--color-tomato)] shrink-0 mt-0.5" />
-               <p className="text-xs text-[var(--color-tomato)] font-medium leading-relaxed">{error}</p>
+                <BasilError size={40} />
+                <p className="text-sm text-[var(--color-terracotta)]">{error}</p>
             </motion.div>
           )}
           {message && (

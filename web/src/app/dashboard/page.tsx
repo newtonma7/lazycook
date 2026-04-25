@@ -1,7 +1,7 @@
 import { unstable_noStore as noStore } from "next/cache";
 import Link from "next/link";
 import { Suspense } from "react";
-import { AccountPanel } from "../account";
+import { AccountPanel } from "../account/account";
 import { IngredientPanel } from "../ingredients/IngredientPanel";
 import { MealPlanPanel } from "../meal-plan/meal-plan";
 import { PantryPanel } from "../pantry/PantryPanel";
