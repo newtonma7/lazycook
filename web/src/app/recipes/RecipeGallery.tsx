@@ -1,9 +1,9 @@
-// src/app/recipes/RecipeGallery.tsx
+// components/recipes/RecipeGallery.tsx
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
-import { AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useRecipes } from "./hooks/useRecipes";
 import { useRecipeActions } from "./hooks/useRecipeActions";
 import { GalleryHeader } from "./components/GalleryHeader";
@@ -21,33 +21,48 @@ type Props = {
   consumers?: ConsumerInfo[];
 };
 
-export function RecipeGallery({ supabaseUrl, supabaseAnonKey, consumerId, ingredients, isAdmin = false, consumers = [] }: Props) {
+export function RecipeGallery({
+  supabaseUrl,
+  supabaseAnonKey,
+  consumerId,
+  ingredients,
+  isAdmin = false,
+  consumers = [],
+}: Props) {
   const searchParams = useSearchParams();
-
-  // Deep‑link params
   const backTo = searchParams.get("back");
   const planId = searchParams.get("plan");
   const recipeIdParam = searchParams.get("recipe");
 
-  const [viewMode, setViewMode] = useState<"personal" | "public">(isAdmin ? "public" : "personal");
+  const [viewMode, setViewMode] = useState<"personal" | "public">(
+    isAdmin ? "public" : "personal"
+  );
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState<"all" | "quick" | "simple">("all");
   const [cookingRecipe, setCookingRecipe] = useState<Recipe | null>(null);
+  const [showSaveCelebration, setShowSaveCelebration] = useState(false);
 
   const [adminUserId, setAdminUserId] = useState<number | null>(null);
   const [adminMode, setAdminMode] = useState<"all" | "user">("all");
 
   const { recipes, setRecipes, isLoading } = useRecipes(
-    supabaseUrl, supabaseAnonKey, consumerId, viewMode, isAdmin, adminUserId, adminMode
+    supabaseUrl,
+    supabaseAnonKey,
+    consumerId,
+    viewMode,
+    isAdmin,
+    adminUserId,
+    adminMode
   );
 
-  const { saveToMyKitchen, toggleRecipeVisibility, saveEdit, deleteRecipe } = useRecipeActions(supabaseUrl, supabaseAnonKey, consumerId);
+  const { saveToMyKitchen, toggleRecipeVisibility, saveEdit, deleteRecipe } =
+    useRecipeActions(supabaseUrl, supabaseAnonKey, consumerId);
 
-  // Auto‑select recipe from URL param once recipes are loaded
+  // Auto‑open recipe from URL param
   useEffect(() => {
     if (recipeIdParam && recipes.length > 0) {
-      const recipe = recipes.find(r => r.recipe_id === Number(recipeIdParam));
+      const recipe = recipes.find((r) => r.recipe_id === Number(recipeIdParam));
       if (recipe) setSelectedRecipe(recipe);
     }
   }, [recipeIdParam, recipes]);
@@ -56,50 +71,76 @@ export function RecipeGallery({ supabaseUrl, supabaseAnonKey, consumerId, ingred
     return recipes.filter((r) => {
       const s = searchQuery.toLowerCase();
       return (
-        !s ||
-        r.title.toLowerCase().includes(s) ||
-        (r.description?.toLowerCase() || "").includes(s) ||
-        r.recipe_ingredient.some((ing) => (ing.ingredient?.name || "").toLowerCase().includes(s))
-      ) &&
-      (activeFilter === "all" ? true :
-       activeFilter === "quick" ? ((r.prep_time_min || 0) + (r.cook_time_min || 0)) <= 30 :
-       /* simple */ r.recipe_ingredient.length <= 5);
+        (!s ||
+          r.title.toLowerCase().includes(s) ||
+          (r.description?.toLowerCase() || "").includes(s) ||
+          r.recipe_ingredient.some((ing) =>
+            (ing.ingredient?.name || "").toLowerCase().includes(s)
+          )) &&
+        (activeFilter === "all"
+          ? true
+          : activeFilter === "quick"
+          ? (r.prep_time_min || 0) + (r.cook_time_min || 0) <= 30
+          : r.recipe_ingredient.length <= 5)
+      );
     });
   }, [recipes, searchQuery, activeFilter]);
 
-  const handleToggleVisibility = async (recipe: Recipe) => {
-    if (!consumerId) return;
-    const updated = await toggleRecipeVisibility(recipe);
-    if (updated) {
-      setRecipes((prev) => prev.map(r => r.recipe_id === updated.recipe_id ? updated : r));
+  const handleToggleVisibility = useCallback(
+    async (recipe: Recipe) => {
+      if (!consumerId) return;
+      const updated = await toggleRecipeVisibility(recipe);
+      if (updated) {
+        setRecipes((prev) =>
+          prev.map((r) => (r.recipe_id === updated.recipe_id ? updated : r))
+        );
+        setSelectedRecipe(updated);
+      }
+      return updated;
+    },
+    [consumerId, toggleRecipeVisibility]
+  );
+
+  const handleSaveEdit = useCallback(
+    async (draft: Recipe) => {
+      await saveEdit(draft);
+      const updated = { ...draft };
+      setRecipes((prev) =>
+        prev.map((r) => (r.recipe_id === updated.recipe_id ? updated : r))
+      );
       setSelectedRecipe(updated);
-    }
-    return updated;
-  };
+    },
+    [saveEdit]
+  );
 
-  const handleSaveEdit = async (draft: Recipe) => {
-    await saveEdit(draft);
-    const updated = { ...draft };
-    setRecipes((prev) => prev.map(r => r.recipe_id === updated.recipe_id ? updated : r));
-    setSelectedRecipe(updated);
-  };
+  const handleDelete = useCallback(
+    async (recipeId: number) => {
+      try {
+        await deleteRecipe(recipeId);
+        setRecipes((prev) => prev.filter((r) => r.recipe_id !== recipeId));
+        setSelectedRecipe(null);
+      } catch (error) {
+        console.error("Delete failed", error);
+      }
+    },
+    [deleteRecipe]
+  );
 
-  const handleDelete = async (recipeId: number) => {
-    try {
-      await deleteRecipe(recipeId);
-      setRecipes((prev) => prev.filter(r => r.recipe_id !== recipeId));
-      setSelectedRecipe(null);
-    } catch (error) {
-      console.error("Delete failed", error);
-    }
-  };
+  const handleSaveToMyKitchen = useCallback(
+    async (recipe: Recipe) => {
+      await saveToMyKitchen(recipe);
+      setShowSaveCelebration(true);
+      setTimeout(() => setShowSaveCelebration(false), 2500);
+    },
+    [saveToMyKitchen]
+  );
 
   const isOwner = !isAdmin && consumerId !== null;
 
   return (
     <div className="font-[family-name:var(--font-body)] text-[var(--color-ink)] animate-in fade-in duration-700 w-full relative">
       <AnimatePresence mode="wait">
-        {!selectedRecipe && (
+        {!selectedRecipe && !cookingRecipe && (
           <div key="grid">
             <GalleryHeader
               isAdmin={isAdmin}
@@ -122,12 +163,13 @@ export function RecipeGallery({ supabaseUrl, supabaseAnonKey, consumerId, ingred
 
         {selectedRecipe && !cookingRecipe && (
           <RecipeDetail
+            key={selectedRecipe.recipe_id}
             recipe={selectedRecipe}
             isAdmin={isAdmin}
             isOwner={isOwner}
             onBack={() => setSelectedRecipe(null)}
             onStartCooking={setCookingRecipe}
-            onSaveToMyKitchen={saveToMyKitchen}
+            onSaveToMyKitchen={handleSaveToMyKitchen}
             onToggleVisibility={handleToggleVisibility}
             onSaveEdit={handleSaveEdit}
             onDelete={handleDelete}

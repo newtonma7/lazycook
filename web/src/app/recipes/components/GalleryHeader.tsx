@@ -1,8 +1,6 @@
 // components/recipes/components/GalleryHeader.tsx
-import { motion } from "framer-motion";
 import { Search } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { BasilPeeking } from "../../components/mascot/BasilComponents";
 
 type Props = {
   isAdmin: boolean;
@@ -13,18 +11,6 @@ type Props = {
   activeFilter: "all" | "quick" | "simple";
   onFilterChange: (f: "all" | "quick" | "simple") => void;
 };
-
-const FloatingEmoticon = ({ emoji, delay = 0, x = "0%", y = "0%" }: any) => (
-  <motion.span
-    initial={{ y: 0 }}
-    animate={{ y: [0, -10, 0], rotate: [0, 10, -10, 0] }}
-    transition={{ duration: 6, repeat: Infinity, delay, ease: "easeInOut" }}
-    className="absolute text-xl pointer-events-none select-none opacity-30 z-0"
-    style={{ left: x, top: y }}
-  >
-    {emoji}
-  </motion.span>
-);
 
 export function GalleryHeader({
   isAdmin,
@@ -37,37 +23,49 @@ export function GalleryHeader({
 }: Props) {
   return (
     <>
-<header className="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-6 relative">
-  {/* Title section */}
-  <div className="relative flex items-center gap-2">
-    <FloatingEmoticon emoji="🍎" x="-40px" y="-15px" delay={0} />
-    <div>
-      <span className="font-[family-name:var(--font-display)] text-xl italic text-[var(--color-tomato)] block mb-[-4px] ml-0.5">
-        the kitchen archive
-      </span>
-      <h1 className="font-[family-name:var(--font-display)] text-4xl md:text-5xl font-bold tracking-tight">
-        Recipe Gallery
-      </h1>
-    </div>
-  </div>
+      <header className="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-[var(--color-border-light)] pb-6 relative">
+        <div className="relative flex items-center gap-2">
+          {/* decorative floating emoji (optional) */}
+          <div>
+            <span className="font-[family-name:var(--font-display)] text-xl italic text-[var(--color-tomato)] block mb-[-4px] ml-0.5">
+              the kitchen archive
+            </span>
+            <h1 className="font-[family-name:var(--font-display)] text-4xl md:text-5xl font-bold tracking-tight">
+              Recipe Gallery
+            </h1>
+          </div>
+        </div>
 
-  {/* Tabs */}
-  <div className="flex gap-6 items-center text-[10px] font-bold uppercase tracking-[0.2em]">
-    {/* ... unchanged ... */}
-  </div>
+        {/* Tab buttons */}
+        <div className="flex gap-6 items-center text-[10px] font-bold uppercase tracking-[0.2em]">
+          {!isAdmin && (
+            <button
+              onClick={() => onViewModeChange("personal")}
+              className={cn(
+                "transition-all cursor-pointer",
+                viewMode === "personal"
+                  ? "text-[var(--color-tomato)] border-b-2 border-[var(--color-tomato)] pb-1"
+                  : "text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]"
+              )}
+            >
+              My Kitchen
+            </button>
+          )}
+          <button
+            onClick={() => onViewModeChange("public")}
+            className={cn(
+              "transition-all cursor-pointer",
+              viewMode === "public"
+                ? "text-[var(--color-tomato)] border-b-2 border-[var(--color-tomato)] pb-1"
+                : "text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]"
+            )}
+          >
+            {isAdmin ? "All Recipes" : "Community"}
+          </button>
+        </div>
+      </header>
 
-  {/* Basil peeking over the border line — anchored to the bottom */}
-  <div className="absolute top-full left-0 w-full flex justify-center pointer-events-none">
-    <div className="w-[100px] -mt-[30px]">
-      <BasilPeeking size={100} />
-    </div>
-  </div>
-
-  {/* Border line stays visible behind Basil */}
-  <div className="absolute bottom-0 left-0 w-full h-px bg-[var(--color-border-light)] -z-10" />
-    </header>
-
-      {/* Search and filter bar  */}
+      {/* Search & Filter bar */}
       <div className="mb-8 flex flex-col md:flex-row items-center gap-4">
         <div className="flex-1 w-full relative group">
           <Search className="absolute left-0 bottom-2.5 w-3.5 h-3.5 text-[var(--color-ink-muted)] group-focus-within:text-[var(--color-tomato)] transition-colors" />

@@ -1,8 +1,8 @@
 import { unstable_noStore as noStore } from "next/cache";
 import Link from "next/link";
 import { Suspense } from "react";
-import { AccountPanel } from "../account";
-import { IngredientPanel } from "../ingredient";
+import { AccountPanel } from "../account/account";
+import { IngredientPanel } from "../ingredients/IngredientPanel";
 import { MealPlanPanel } from "../meal-plan/meal-plan";
 import { PantryPanel } from "../pantry/PantryPanel";
 import { RecipePanel } from "../recipes/RecipePanel";
@@ -98,7 +98,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         description: "Your AI sous-chef is ready to draft today's menu." 
     },
     "ingredient": { 
-        showGreeting: true, 
+        showGreeting: false, 
         description: "Govern the master culinary ingredient database." 
     }
   };
